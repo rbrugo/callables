@@ -36,10 +36,14 @@ int main()
         auto [twice, twice_expr] = DECLARE(([](auto n) { return 2 * n; }));
         auto [square, square_expr] = DECLARE(([](auto n) { return n * n; }));
         auto [sum, sum_expr] = DECLARE(([](int a, int b) { return a + b;}));
-        should("compose the stored functions") = [&] {
+        should("compose(f(x), g(args))(x, y, ...) = f(g(x y, ...))") = [&] {
             expect(compose(twice, square)(2) == 8_i) << twice_expr << ", " << square_expr << "with 2";
             expect(compose(twice, square)(3) == 18_i) << twice_expr << ", " << square_expr << "with 3";
             expect(compose(twice, sum)(2, 3) == 10_i) << twice_expr << ", " << sum_expr << "with 2, 3";
+        };
+        should("compose(f(args), g(x))(x, y, ...) = f(g(x), g(y), ...)") = [&] {
+            expect(compose(sum, twice)(3, 4) == 14_i) << sum_expr << ", " << twice_expr << "with 3, 4";
+            expect(compose(sum, square)(-2, -3) == 13_i) << sum_expr << ", " << square_expr << "with -2, -3";
         };
     };
 

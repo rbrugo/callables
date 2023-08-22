@@ -41,7 +41,7 @@ concept applicable = requires(Fn && fn, Tuple && args) {
 // template <typename Tuple1, typename Tuple2>
 // using combined_tuple_t = std::invoke_result_t<std::tuple_cat, Tuple1, Tuple2>;
 
-struct combined_tuple
+struct _combined_tuple
 {
     template <typename ...Ts, typename ...Us>
     static auto _impl(std::tuple<Ts...>, std::tuple<Us...>) -> std::tuple<Ts..., Us...>;
@@ -65,7 +65,7 @@ struct combined_tuple
 };
 
 template <typename ...Ts>
-using combined_tuple_t = combined_tuple::type<Ts...>;
+using combined_tuple_t = _combined_tuple::type<Ts...>;
 
 static_assert(std::same_as<combined_tuple_t<std::tuple<int, float>, std::tuple<int>>, std::tuple<int, float, int>>);
 static_assert(std::same_as<combined_tuple_t<std::tuple<int>, std::pair<int, double>>, std::tuple<int, int, double>>);
@@ -79,8 +79,6 @@ concept can_select_integral_overload = std::regular_invocable<Fn, T, U>// and Le
 
 } // namespace detail
 
-
 } // namespace brun
 
 #endif /* BRUN_CALLABLES_DETAIL_HPP */
-

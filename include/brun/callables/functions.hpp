@@ -11,6 +11,7 @@
 #include <utility>
 #include <functional>
 #include "detail.hpp"
+#include "detail/functional.hpp"
 
 namespace brun
 {
@@ -62,40 +63,72 @@ static_assert(apply([](auto x, auto y) { return x * x + y * y; })(std::tuple{4, 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct compose_fn
 {
-    template <typename Fn1, typename Fn2>
+    template <typename ...Fns>
     struct compose_fn_capture
     {
     private:
-        Fn1 _fn1;
-        Fn2 _fn2;
+        std::tuple<Fns...> _fns;
 
-    public:
-        template <typename F1, typename F2>
-            requires std::constructible_from<Fn1, F1>
-                 and std::constructible_from<Fn2, F2>
-        constexpr
-        compose_fn_capture(F1 && f1, F2 && f2) :
-            _fn1{std::forward<F1>(f1)},
-            _fn2{std::forward<F2>(f2)}
-        {}
+        struct uncallable {};
 
         template <typename ...Args>
-            requires std::invocable<Fn2, Args...>
-                 and std::invocable<Fn1, std::invoke_result_t<Fn2, Args...>>
         constexpr
-        auto operator()(Args &&... args) const
-            noexcept(std::is_nothrow_invocable_v<Fn1, std::invoke_result_t<Fn2, Args...>>)
-            -> decltype(auto)
+        static auto call_with_args(std::tuple<Fns...> & tp, Args &&... args) -> decltype(auto)
+        { return _call_impl<0>(tp, std::forward<Args>(args)...); }
+
+        template <typename ...Args>
+        constexpr
+        static auto call_with_args(std::tuple<Fns...> const & tp, Args &&... args) -> decltype(auto)
+        { return _call_impl<0>(tp, std::forward<Args>(args)...); }
+
+        template <std::size_t I, typename Tuple, typename ...Args>
+        constexpr
+        static auto _call_impl(Tuple && fns, Args &&... args) -> decltype(auto)
         {
-            return std::invoke(_fn1, std::invoke(_fn2, std::forward<Args>(args)...));
+#           define FWD(x) std::forward<decltype(x)>(x)
+#           define GET(idx, tpl) std::get<idx>(std::forward<Tuple>(tpl))
+            if constexpr (I == sizeof...(Fns) - 1) {
+                if constexpr (std::invocable<std::tuple_element_t<I, std::remove_cvref_t<Tuple>>, Args...>) {
+                    return GET(I, fns)(FWD(args)...);
+                } else if constexpr (sizeof...(Fns) != 1) {
+                    return uncallable{};
+                }
+            } else {
+                using nested_call_result = decltype(_call_impl<I + 1>(FWD(fns), FWD(args)...));
+                if constexpr (not std::same_as<nested_call_result, uncallable>) {
+                    return GET(I, fns)(_call_impl<I + 1>(FWD(fns), FWD(args)...));
+                } else {
+                    using fn_t = std::tuple_element_t<I, std::remove_cvref_t<Tuple>>;
+                    if constexpr ((std::invocable<fn_t, decltype(_call_impl<I + 1>(FWD(fns), FWD(args)))...>)) {
+                        return GET(I, fns)(_call_impl<I + 1>(FWD(fns),FWD(args))...);
+                    } else if constexpr (I != 0) {
+                        return uncallable{};
+                    }
+                }
+            }
+#           undef GET
+#           undef FWD
         }
+    public:
+        template <typename ...Fns2>
+            requires detail::pairwise_constructible<Fns...>::template from<Fns2...>
+        constexpr
+        compose_fn_capture(Fns2 &&... fns) : _fns{std::forward<Fns2>(fns)...} {}
+
+        template <typename ...Args>
+        constexpr auto operator()(Args &&... args) const -> decltype(auto)
+        { return call_with_args(_fns, std::forward<Args>(args)...); }
+
+        template <typename ...Args>
+        constexpr auto operator()(Args &&... args) -> decltype(auto)
+        { return call_with_args(_fns, std::forward<Args>(args)...); }
     };
 
-    template <typename Fn1, typename Fn2>
+    template <typename ...Fns>
     constexpr
-    auto operator()(Fn1 && fn1, Fn2 && fn2) const noexcept
+    auto operator()(Fns &&... fns) const noexcept
     {
-        return compose_fn_capture<Fn1, Fn2>{std::forward<Fn1>(fn1), std::forward<Fn2>(fn2)};
+        return compose_fn_capture<Fns...>{std::forward<Fns>(fns)...};
     }
 };
 
@@ -103,6 +136,7 @@ constexpr inline compose_fn compose;
 
 static_assert(compose([](auto x) { return x + 1; }, [](auto a, auto b) { return a + b; })(0, 2) == 3);
 static_assert(compose([](auto c) { return c - 'z'; }, [](auto c) { return c + 'z'; })('c') == 'c');
+static_assert(compose(+[](int a, int b) { return a + b; }, +[](int x) { return x; })(0, 0) == 0);
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................IDENTITY.................................. //
