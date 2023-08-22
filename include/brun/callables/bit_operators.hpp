@@ -17,6 +17,7 @@ namespace brun
 // bit_or
 // bit_xor
 
+#define FWD(x) std::forward<decltype(x)>(x)
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_and................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -30,49 +31,51 @@ struct bit_and_fn
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit curried(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_and_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t & std::forward<U>(u)))
-        { return _t & std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t & FWD(u)))
+        { return _t & FWD(u); }
 
         template <typename U> requires std::regular_invocable<bit_and_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) & _t))
-        { return std::forward<U>(u) & _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) & _t))
+        { return FWD(u) & _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) & std::forward<U>(u); }
-    constexpr
-    auto operator()(T && t, U && u) const noexcept(noexcept(std::forward<T>(t) & std::forward<U>(u)))
+        requires requires(T && t, U && u) { FWD(t) & FWD(u); }
+    constexpr CB_STATIC
+    auto operator()(T && t, U && u) CB_CONST
+        noexcept(noexcept(FWD(t) & FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) & std::forward<U>(u); }
+    { return FWD(t) & FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
              and (detail::tuple_size<Tuple> == 2)
-    constexpr
-    auto operator()(Tuple && p) const noexcept(noexcept(std::apply(*this, std::forward<Tuple>(p))))
+    constexpr CB_STATIC
+    auto operator()(Tuple && p) CB_CONST
+        noexcept(noexcept(std::get<0>(FWD(p)) & std::get<1>(FWD(p))))
         -> decltype(auto)
-    { return std::apply(*this, std::forward<Tuple>(p)); }
+    { return std::get<0>(FWD(p)) & std::get<1>(FWD(p)); }
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
+    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    { return curried<T, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
+    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    { return curried<T, false>{FWD(t)}; }
 
     template <typename T>
-    constexpr
-    auto operator()(T && t) const noexcept(noexcept(left(std::forward<T>(t))))
+    constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
         -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    { return left(FWD(t)); }
 };
 
 constexpr inline bit_and_fn bit_and;
@@ -90,49 +93,50 @@ struct bit_or_fn
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit curried(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t | std::forward<U>(u)))
-        { return _t | std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t | FWD(u)))
+        { return _t | FWD(u); }
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) | _t))
-        { return std::forward<U>(u) | _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) | _t))
+        { return FWD(u) | _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) | std::forward<U>(u); }
-    constexpr
-    auto operator()(T && t, U && u) const noexcept(noexcept(std::forward<T>(t) & std::forward<U>(u)))
+        requires requires(T && t, U && u) { FWD(t) | FWD(u); }
+    constexpr CB_STATIC
+    auto operator()(T && t, U && u) CB_CONST
+        noexcept(noexcept(FWD(t) & FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) | std::forward<U>(u); }
+    { return FWD(t) | FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
              and (detail::tuple_size<Tuple> == 2)
-    constexpr
-    auto operator()(Tuple && p) const noexcept(noexcept(std::apply(*this, std::forward<Tuple>(p))))
+    constexpr CB_STATIC
+    auto operator()(Tuple && p) CB_CONST noexcept(noexcept(std::get<0>(FWD(p)) | std::get<1>(FWD(p))))
         -> decltype(auto)
-    { return std::apply(*this, std::forward<Tuple>(p)); }
+    { return std::get<0>(FWD(p)) | std::get<1>(FWD(p)); }
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
+    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    { return curried<T, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
+    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    { return curried<T, false>{FWD(t)}; }
 
     template <typename T>
-    constexpr
-    auto operator()(T && t) const noexcept(noexcept(left(std::forward<T>(t))))
+    constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
         -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    { return left(FWD(t)); }
 };
 
 constexpr inline bit_or_fn bit_or;
@@ -150,49 +154,49 @@ struct bit_xor_fn
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit curried(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t ^ std::forward<U>(u)))
-        { return _t ^ std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t ^ FWD(u)))
+        { return _t ^ FWD(u); }
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) ^ _t))
-        { return std::forward<U>(u) ^ _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) ^ _t))
+        { return FWD(u) ^ _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) ^ std::forward<U>(u); }
-    constexpr
-    auto operator()(T && t, U && u) const noexcept(noexcept(std::forward<T>(t) & std::forward<U>(u)))
+        requires requires(T && t, U && u) { FWD(t) ^ FWD(u); }
+    constexpr CB_STATIC
+    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(FWD(t) & FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) ^ std::forward<U>(u); }
+    { return FWD(t) ^ FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
              and (detail::tuple_size<Tuple> == 2)
-    constexpr
-    auto operator()(Tuple && p) const noexcept(noexcept(std::apply(*this, std::forward<Tuple>(p))))
+    constexpr CB_STATIC
+    auto operator()(Tuple && p) CB_CONST noexcept(noexcept(std::get<0>(FWD(p)) ^ std::get<1>(FWD(p))))
         -> decltype(auto)
-    { return std::apply(*this, std::forward<Tuple>(p)); }
+    { return std::get<0>(FWD(p)) ^ std::get<1>(FWD(p)); }
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
+    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    { return curried<T, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
+    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
         -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    { return curried<T, false>{FWD(t)}; }
 
     template <typename T>
-    constexpr
-    auto operator()(T && t) const noexcept(noexcept(left(std::forward<T>(t))))
+    constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
         -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    { return left(FWD(t)); }
 };
 
 constexpr inline bit_xor_fn bit_xor;
@@ -203,13 +207,14 @@ constexpr inline bit_xor_fn bit_xor;
 struct bit_not_fn
 {
     template <typename T>
-        requires requires(T && t) { -std::forward<T>(t); }
-    constexpr auto operator()(T && t) const noexcept(noexcept( ~std::forward<T>(t) ))
-    { return ~std::forward<T>(t); }
+        requires requires(T && t) { -FWD(t); }
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept( ~FWD(t) ))
+    { return ~FWD(t); }
 };
 
 constexpr inline bit_not_fn bit_not;
 
+#undef FWD
 } // namespace brun
 
 #endif /* BRUN_CALLABLES_BIT_OPERATORS_HPP */

@@ -32,21 +32,25 @@ struct apply_fn
 
         template <typename Tuple>
             requires detail::applicable<Fn, Tuple>
-        constexpr auto operator()(Tuple && tp) const noexcept(noexcept(std::apply(_fn, std::forward<Tuple>(tp))))
+        constexpr
+        auto operator()(Tuple && tp)
+            noexcept(noexcept(std::apply(_fn, std::forward<Tuple>(tp))))
             -> decltype(auto)
         { return std::apply(_fn, std::forward<Tuple>(tp)); }
     };
 
     template <typename Fn, typename Tuple>
         requires detail::applicable<Fn, Tuple>
-    constexpr
-    auto operator()(Fn && fn, Tuple && args) const noexcept(noexcept(std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args))))
+    constexpr CB_STATIC
+    auto operator()(Fn && fn, Tuple && args) CB_CONST
+        noexcept(noexcept(std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args))))
         -> decltype(auto)
     { return std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args)); }
 
     template <typename Fn>
-    constexpr
-    auto operator()(Fn && fn) const noexcept(noexcept(curried{std::forward<Fn>(fn)}))
+    constexpr CB_STATIC
+    auto operator()(Fn && fn) CB_CONST
+        noexcept(noexcept(curried{std::forward<Fn>(fn)}))
         -> decltype(auto)
     {
         return curried{std::forward<Fn>(fn)};
@@ -125,8 +129,8 @@ struct compose_fn
     };
 
     template <typename ...Fns>
-    constexpr
-    auto operator()(Fns &&... fns) const noexcept
+    constexpr CB_STATIC
+    auto operator()(Fns &&... fns) CB_CONST noexcept
     {
         return compose_fn_capture<Fns...>{std::forward<Fns>(fns)...};
     }
@@ -146,7 +150,7 @@ struct identity_fn
     using is_transparent = void;
 
     template <typename T>
-    constexpr auto operator()(T && t) const noexcept
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
     { return std::forward<T &&>(t); }
 };
 
@@ -163,8 +167,8 @@ private:
     {
         template <typename ...Args>
             requires std::constructible_from<T, Args...>
-        constexpr
-        auto operator()(std::tuple<Args...> && args) const
+        constexpr CB_STATIC
+        auto operator()(std::tuple<Args...> && args) CB_CONST
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
         {
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
@@ -174,8 +178,8 @@ private:
 
         template <typename ...Args>
             requires std::constructible_from<T, Args...>
-        constexpr
-        auto operator()(std::tuple<Args...> const & args) const
+        constexpr CB_STATIC
+        auto operator()(std::tuple<Args...> const & args) CB_CONST
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
         {
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
@@ -189,8 +193,8 @@ public:
 
     template <typename ...Args>
         requires std::constructible_from<T, Args...>
-    constexpr
-    auto operator()(Args &&... args) const
+    constexpr CB_STATIC
+    auto operator()(Args &&... args) CB_CONST
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
     { return T(std::forward<Args>(args)...); }
 };

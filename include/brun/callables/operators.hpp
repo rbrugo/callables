@@ -13,4 +13,3 @@
 #include "ordering.hpp"
 
 #endif /* BRUN_CALLABLES_OPERATORS_HPP */
-

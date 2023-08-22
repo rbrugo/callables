@@ -8,6 +8,7 @@
 #ifndef BRUN_CALLABLES_DETAIL_HPP
 #define BRUN_CALLABLES_DETAIL_HPP
 
+#include "detail/config.hpp"
 #include <tuple>
 
 namespace brun
