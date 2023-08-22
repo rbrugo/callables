@@ -38,9 +38,6 @@ concept applicable = requires(Fn && fn, Tuple && args) {
 };
 
 
-// template <typename Tuple1, typename Tuple2>
-// using combined_tuple_t = std::invoke_result_t<std::tuple_cat, Tuple1, Tuple2>;
-
 struct _combined_tuple
 {
     template <typename ...Ts, typename ...Us>
