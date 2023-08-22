@@ -54,6 +54,48 @@ int main()
             expect(identity(std::string("hi")) == "hi"_b);
         };
     };
+
+    "construct_fn"_test = [] {
+        using brun::construct;
+        struct empty {
+            empty() {}
+            bool operator==(empty const &) const = default;
+        };
+        struct single {
+            int ct;
+            single(int x = 0) : ct{x} {}
+            bool operator==(single const &) const = default;
+        };
+        struct multiple {
+            int ct = -1;
+            multiple(int x, int y) : ct{x + y} {}
+            bool operator==(multiple const &) const = default;
+        };
+        struct overloaded {
+            int ct = -1;
+            overloaded(int x) : ct{x} {}
+            overloaded(empty) {}
+            bool operator==(overloaded const &) const = default;
+        };
+
+        should("construct an object of the given type") = [] {
+            expect(construct<empty>() == empty());
+            expect(construct<single>() == single());
+            expect(construct<single>(12) == single(12));
+            expect(construct<multiple>(1, 3) == multiple(3, 1));
+            expect(construct<overloaded>(10) == overloaded(10));
+            expect(construct<overloaded>(empty{}) == overloaded{empty{}});
+        };
+
+        should("construct an object of the given type from a tuple of arguments") = [] {
+            expect(construct<empty>.from_tuple(std::tuple<>{}) == empty());
+            expect(construct<single>.from_tuple(std::tuple{}) == single());
+            expect(construct<single>.from_tuple(std::tuple{12}) == single(12));
+            expect(construct<multiple>.from_tuple(std::tuple{1, 3}) == multiple(3, 1));
+            expect(construct<overloaded>.from_tuple(std::tuple{10}) == overloaded(10));
+            expect(construct<overloaded>.from_tuple(std::tuple{empty{}}) == overloaded{empty{}});
+        };
+    };
 }
 
 #undef DECLARE

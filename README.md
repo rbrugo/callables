@@ -12,13 +12,18 @@ struct box
     float weight;
 };
 
+struct store
+{
+    store(auto) {}
+};
+
 auto boxes = std::vector<box>{...};
 std::ranges::sort(boxes, brun::less_equal);
 
 auto heavy = boxes | svw::filter(boxes, brun::greater_equal(10), &box::weight);
 auto my_boxes = heavy | svw::filter(heavy, brun::equals("Joe"), &box::label);
 auto take_stuff = my_boxes | svw::transform(brun::minus(10), &box::weight);
-
+auto store_all = take_stuff | svw::transform(brun::construct<store>);
 ```
 
 ## Function objects
@@ -32,6 +37,7 @@ auto take_stuff = my_boxes | svw::transform(brun::minus(10), &box::weight);
 - `apply`
 - `compose`
 - `identity`
+- `construct<T>`, `construct<T>.from_tuple`
 
 ***Equality and ordering:***
 - `equal_to`

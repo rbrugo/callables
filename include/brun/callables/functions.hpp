@@ -152,6 +152,52 @@ struct identity_fn
 
 constexpr inline identity_fn identity;
 
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// .................................CONSTRUCT.................................. //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+template <typename T>
+struct construct_fn
+{
+private:
+    struct from_tuple_fn
+    {
+        template <typename ...Args>
+            requires std::constructible_from<T, Args...>
+        constexpr
+        auto operator()(std::tuple<Args...> && args) const
+            noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        {
+            return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
+                return T(std::get<I>(args)...);
+            }(std::make_index_sequence<sizeof...(Args)>{});
+        }
+
+        template <typename ...Args>
+            requires std::constructible_from<T, Args...>
+        constexpr
+        auto operator()(std::tuple<Args...> const & args) const
+            noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        {
+            return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
+                return T(std::get<I>(args)...);
+            }(std::make_index_sequence<sizeof...(Args)>{});
+        }
+    };
+
+public:
+    [[no_unique_address]] from_tuple_fn from_tuple;
+
+    template <typename ...Args>
+        requires std::constructible_from<T, Args...>
+    constexpr
+    auto operator()(Args &&... args) const
+        noexcept(std::is_nothrow_constructible_v<T, Args...>)
+    { return T(std::forward<Args>(args)...); }
+};
+
+template <typename T>
+constexpr inline construct_fn<T> construct;
+
 } // namespace brun
 
 #endif /* BRUN_CALLABLES_FUNCTIONS_HPP */
