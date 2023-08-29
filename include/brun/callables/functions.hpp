@@ -34,18 +34,26 @@ struct apply_fn
             requires detail::applicable<Fn, Tuple>
         constexpr
         auto operator()(Tuple && tp)
-            noexcept(noexcept(std::apply(_fn, std::forward<Tuple>(tp))))
+            noexcept(noexcept(apply_fn{}(_fn, std::forward<Tuple>(tp))))
             -> decltype(auto)
-        { return std::apply(_fn, std::forward<Tuple>(tp)); }
+        { return apply_fn{}(_fn, std::forward<Tuple>(tp)); }
     };
 
     template <typename Fn, typename Tuple>
-        requires detail::applicable<Fn, Tuple>
+        requires detail::direct_applicable<Fn, Tuple>
     constexpr CB_STATIC
     auto operator()(Fn && fn, Tuple && args) CB_CONST
-        noexcept(noexcept(std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args))))
+        noexcept(noexcept(apply(std::forward<Fn>(fn), std::forward<Tuple>(args))))
         -> decltype(auto)
-    { return std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args)); }
+    { return apply(std::forward<Fn>(fn), std::forward<Tuple>(args)); }
+
+    template <typename Fn, typename T>
+        requires detail::has_member_apply_with<T, Fn>
+    constexpr CB_STATIC
+    auto operator()(Fn && fn, T && obj) CB_CONST
+        noexcept(noexcept(std::forward<T>(obj).apply(std::forward<Fn>(fn))))
+        -> decltype(auto)
+    { return std::forward<T>(obj).apply(std::forward<Fn>(fn)); }
 
     template <typename Fn>
     constexpr CB_STATIC

@@ -33,11 +33,18 @@ constexpr inline auto is_pair_specialization = is_pair_specialization_impl<std::
 template <typename T>
 constexpr inline auto tuple_size = std::tuple_size_v<std::remove_cvref_t<T>>;
 
-template <typename Fn, typename Tuple>
-concept applicable = requires(Fn && fn, Tuple && args) {
-    { std::apply(std::forward<Fn>(fn), std::forward<Tuple>(args)) };
+template <typename T, typename Fn>
+concept has_member_apply_with = requires(T && t, Fn && fn) {
+    { std::forward<T>(t).apply(std::forward<Fn>(fn)) };
 };
 
+template <typename Fn, typename Tuple>
+concept direct_applicable = requires(Fn && fn, Tuple && args) {
+    { apply(std::forward<Fn>(fn), std::forward<Tuple>(args)) };
+};
+
+template <typename Fn, typename Tuple>
+concept applicable = direct_applicable<Fn, Tuple> or has_member_apply_with<Tuple, Fn>;
 
 struct _combined_tuple
 {

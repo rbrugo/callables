@@ -13,6 +13,25 @@ using namespace std::literals;
 
 #define DECLARE(EXPR) std::tuple{EXPR, #EXPR}
 
+namespace test {
+struct external_apply
+{
+    int x;
+};
+
+template <typename Fn>
+auto apply(Fn && fn, external_apply const & obj) noexcept -> decltype(auto)
+{ return std::forward<Fn>(fn)(obj.x); }
+
+struct member_apply
+{
+    int x;
+    template <typename Fn>
+    constexpr auto apply(Fn && fn) noexcept -> decltype(auto) { return std::forward<Fn>(fn)(x); }
+};
+}  // namespace test
+
+
 
 int main()
 {
@@ -28,6 +47,12 @@ int main()
             expect(apply(sum)(std::tuple{1, 2}) == 3_i) << sum_expr << "with arguments 1, 2";
             expect(apply(prod)(std::tuple{1, 2, 3}) == 6_i) << prod_expr << "with arguments 1, 2, 3";
             expect(apply(prod)(std::tuple{2, 2, 2, 2}) == 16_i) << prod_expr << "with arguments 2, 2, 2, 2";
+        };
+        should("apply choose an ADL or member overload of `apply` if available") = [&] {
+            auto stuff_1 = test::external_apply{10};
+            auto stuff_2 = test::member_apply{10};
+            expect(apply([](auto x) { return x; })(stuff_1) == 10_i);
+            expect(apply([](auto x) { return x; })(stuff_2) == 10_i);
         };
     };
 
