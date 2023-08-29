@@ -46,6 +46,10 @@ int main()
              expect(plus(std::pair{1, 2}) == 3_i);
              expect(plus(std::pair{1., -1.}) == 0._d);
              expect(plus(std::pair{"a"s, "bc"s}) == "abc"s);
+
+             int x = 0;
+             int y = 0;
+             expect(plus(std::pair<int const &, int const &>(x, y)) == 0);
          };
          should("callable with a binary tuple argument") = [] {
              expect(plus(std::tuple{1, 2}) == 3_i);
@@ -75,6 +79,9 @@ int main()
         should("callable with a pair argument") = [] {
             expect(minus(std::pair{1, 2}) == -1_i);
             expect(minus(std::pair{1., -1.}) == 2._d);
+            int x = 0;
+            int y = 0;
+            expect(minus(std::pair<int const &, int const &>(x, y)) == 0);
         };
         should("callable with a binary tuple argument") = [] {
             expect(minus(std::tuple{1, 2}) == -1_i);
