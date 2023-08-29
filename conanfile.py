@@ -10,35 +10,35 @@ class Callables(ConanFile):
     # package_type = "library"
 
     # Optional metadata
-    license = "BSL"
+    license = "BSL-1.0"
     author = "Brugo Riccardo brugo.riccardo@gmail.com"
     url = "https://github.com/rbrugo/callables"
     description = "A set of composable and partially-applicable function objects " \
         "to simplify the use of algorithms and views in C++20 and later "
-    topics = ("c++", "c++20", "c++23", "modern-c++", "cpp", "ranges")
+    topics = ("c++", "c++20", "c++23", "cpp", "ranges")
 
-    # Binary configuration
-    settings = "os", "arch", "compiler", "build_type"
+    # Binary configuration: not necessary, this is header only
+    # settings = "os", "arch", "compiler", "build_type"
 
     # Sources are located in the same place as this recipe, copy them to the recipe
-    exports_sources = "CMakeLists.txt", "cmake/*", "include/*", "test/*"
+    exports_sources = "include/*"
     no_copy_source = True
-    generators = "CMakeToolchain", "CMakeDeps"
+    # generators = "CMakeToolchain", "CMakeDeps"
 
-    def validate(self):
-        check_min_cppstd(self, 20)
+    # def validate(self):
+    #     check_min_cppstd(self, 20)
 
-    def layout(self):
-        cmake_layout(self)
+    # def layout(self):
+    #     cmake_layout(self)
 
-    def build(self):
-        if not self.conf.get("tools.build:skip_test", default=True):
-            cmake = CMake(self)
-            # cmake.configure(build_script_folder="test")
-            cmake.configure()
-            cmake.build()
-            # self.run(os.path.join(self.cpp.build.bindir, "test_sum"))
-            cmake.test()
+    # def build(self):
+    #     if not self.conf.get("tools.build:skip_test", default=True):
+    #         cmake = CMake(self)
+    #         # cmake.configure(build_script_folder="test")
+    #         cmake.configure()
+    #         cmake.build()
+    #         # self.run(os.path.join(self.cpp.build.bindir, "test_sum"))
+    #         cmake.test()
 
     def package(self):
         # This will also copy the "include" folder
@@ -49,33 +49,6 @@ class Callables(ConanFile):
         # so it's necessary to set those as empty.
         self.cpp_info.bindirs = []
         self.cpp_info.libdirs = []
-
-    def package_id(self):
-        self.info.clear()
-
-    # def config_options(self):
-    #     pass
     #
-    # def configure(self):
-    #     pass
-    #
-    # def layout(self):
-    #     cmake_layout(self)
-    #
-    # def generate(self):
-    #     deps = CMakeDeps(self)
-    #     deps.generate()
-    #     tc = CMakeToolchain(self)
-    #     tc.generate()
-    #
-    # def build(self):
-    #     cmake = CMake(self)
-    #     cmake.configure()
-    #     cmake.build()
-    #
-    # def package(self):
-    #     cmake = CMake(self)
-    #     cmake.install()
-    #
-    # def package_info(self):
-    #     self.cpp_info.libs = ["hello"]
+    # def package_id(self):
+    #     self.info.clear()
