@@ -24,14 +24,14 @@ namespace brun
 struct equal_to_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{FWD(u)} {}
+        constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
         template <typename U>
             requires std::regular_invocable<equal_to_fn, T, U>
@@ -75,20 +75,17 @@ struct equal_to_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{FWD(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{FWD(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
-        -> decltype(auto)
     { return left(FWD(t)); }
 
     using is_transparent = void;
@@ -102,14 +99,14 @@ constexpr inline equal_to_fn equal_to;
 struct not_equal_to_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{FWD(u)} {}
+        constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
         template <typename U>
             requires std::regular_invocable<not_equal_to_fn, T, U>
@@ -153,20 +150,17 @@ struct not_equal_to_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{FWD(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{FWD(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
-        -> decltype(auto)
     { return left(FWD(t)); }
 
     using is_transparent = void;

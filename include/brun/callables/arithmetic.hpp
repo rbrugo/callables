@@ -26,30 +26,30 @@ namespace brun
 struct plus_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit partial(U && u) noexcept(std::is_nothrow_constructible_v<T, U>) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<plus_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t + std::forward<U>(u)))
-        { return _t + std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t + FWD(u)))
+        { return _t + FWD(u); }
 
         template <typename U> requires std::regular_invocable<plus_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) + _t))
-        { return std::forward<U>(u) + _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) + _t))
+        { return FWD(u) + _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) + std::forward<U>(u); }
+        requires requires(T && t, U && u) { FWD(t) + FWD(u); }
     constexpr CB_STATIC
-    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(std::forward<T>(t) + std::forward<U>(u)))
+    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(FWD(t) + FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) + std::forward<U>(u); }
+    { return FWD(t) + FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
@@ -61,21 +61,18 @@ struct plus_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<T, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<T, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(left(std::forward<T>(t))))
-        -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
+    { return left(FWD(t)); }
 };
 
 constexpr inline plus_fn plus;
@@ -86,30 +83,30 @@ constexpr inline plus_fn plus;
 struct minus_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit partial(U && u) noexcept(std::is_nothrow_constructible_v<T, U>) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<minus_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t - std::forward<U>(u)))
-        { return _t - std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t - FWD(u)))
+        { return _t - FWD(u); }
 
         template <typename U> requires std::regular_invocable<minus_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) - _t))
-        { return std::forward<U>(u) - _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) - _t))
+        { return FWD(u) - _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) - std::forward<U>(u); }
+        requires requires(T && t, U && u) { FWD(t) - FWD(u); }
     constexpr CB_STATIC
-    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(std::forward<T>(t) - std::forward<U>(u)))
+    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(FWD(t) - FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) - std::forward<U>(u); }
+    { return FWD(t) - FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
@@ -121,21 +118,18 @@ struct minus_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<T, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<T, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(left(std::forward<T>(t))))
-        -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
+    { return left(FWD(t)); }
 };
 
 constexpr inline minus_fn minus;
@@ -146,30 +140,30 @@ constexpr inline minus_fn minus;
 struct multiplies_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit partial(U && u)  noexcept(std::is_nothrow_constructible_v<T, U>): _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<multiplies_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t * std::forward<U>(u)))
-        { return _t * std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t * FWD(u)))
+        { return _t * FWD(u); }
 
         template <typename U> requires std::regular_invocable<multiplies_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) * _t))
-        { return std::forward<U>(u) * _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) * _t))
+        { return FWD(u) * _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) * std::forward<U>(u); }
+        requires requires(T && t, U && u) { FWD(t) * FWD(u); }
     constexpr CB_STATIC
-    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(std::forward<T>(t) * std::forward<U>(u)))
+    auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(FWD(t) * FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) * std::forward<U>(u); }
+    { return FWD(t) * FWD(u); }
 
     template <typename Tuple>
         requires detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>
@@ -181,21 +175,18 @@ struct multiplies_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<T, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<T, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(left(std::forward<T>(t))))
-        -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
+    { return left(FWD(t)); }
 };
 
 constexpr inline multiplies_fn multiplies;
@@ -206,31 +197,31 @@ constexpr inline multiplies_fn multiplies;
 struct divides_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{std::forward<U>(u)} {}
+        constexpr explicit partial(U && u) noexcept(std::is_nothrow_constructible_v<T, U>) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<divides_fn, T, U> and Left
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t / std::forward<U>(u)))
-        { return _t / std::forward<U>(u); }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t / FWD(u)))
+        { return _t / FWD(u); }
 
         template <typename U> requires std::regular_invocable<divides_fn, T, U> and (not Left)
-        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(std::forward<U>(u) / _t))
-        { return std::forward<U>(u) / _t; }
+        constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(FWD(u) / _t))
+        { return FWD(u) / _t; }
     };
 
     template <typename T, typename U>
-        requires requires(T && t, U && u) { std::forward<T>(t) / std::forward<U>(u); }
+        requires requires(T && t, U && u) { FWD(t) / FWD(u); }
     constexpr CB_STATIC
     auto operator()(T && t, U && u) CB_CONST
-        noexcept(noexcept(std::forward<T>(t) / std::forward<U>(u)))
+        noexcept(noexcept(FWD(t) / FWD(u)))
         -> decltype(auto)
-    { return std::forward<T>(t) / std::forward<U>(u); }
+    { return FWD(t) / FWD(u); }
 
     template <typename Tuple>
         requires (detail::is_tuple_specialization<Tuple> or detail::is_pair_specialization<Tuple>)
@@ -243,21 +234,18 @@ struct divides_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{std::forward<T>(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<T, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{std::forward<T>(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{std::forward<T>(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<T, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(left(std::forward<T>(t))))
-        -> decltype(auto)
-    { return left(std::forward<T>(t)); }
+    auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
+    { return left(FWD(t)); }
 };
 
 constexpr inline divides_fn divides;
@@ -268,9 +256,9 @@ constexpr inline divides_fn divides;
 struct negate_fn
 {
     template <typename T>
-        requires requires(T && t) { -std::forward<T>(t); }
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept( -std::forward<T>(t) ))
-    { return -std::forward<T>(t); }
+        requires requires(T && t) { -FWD(t); }
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept( -FWD(t) ))
+    { return -FWD(t); }
 };
 
 constexpr inline negate_fn negate;

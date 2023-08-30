@@ -22,13 +22,13 @@ namespace brun
 struct apply_fn
 {
     template <typename Fn>
-    struct curried
+    struct partial
     {
     private:
         Fn _fn;
 
     public:
-        constexpr explicit curried(Fn fn) : _fn{std::move(fn)} {}
+        constexpr explicit partial(Fn fn) : _fn{std::move(fn)} {}
 
         template <typename Tuple>
             requires detail::applicable<Fn, Tuple>
@@ -58,10 +58,10 @@ struct apply_fn
     template <typename Fn>
     constexpr CB_STATIC
     auto operator()(Fn && fn) CB_CONST
-        noexcept(noexcept(curried{std::forward<Fn>(fn)}))
+        noexcept(noexcept(partial{std::forward<Fn>(fn)}))
         -> decltype(auto)
     {
-        return curried{std::forward<Fn>(fn)};
+        return partial{std::forward<Fn>(fn)};
     }
 };
 

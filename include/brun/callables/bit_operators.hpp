@@ -24,14 +24,14 @@ namespace brun
 struct bit_and_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{FWD(u)} {}
+        constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_and_fn, T, U> and Left
         constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t & FWD(u)))
@@ -61,20 +61,17 @@ struct bit_and_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{FWD(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{FWD(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
-        -> decltype(auto)
     { return left(FWD(t)); }
 };
 
@@ -86,14 +83,14 @@ constexpr inline bit_and_fn bit_and;
 struct bit_or_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{FWD(u)} {}
+        constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and Left
         constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t | FWD(u)))
@@ -122,20 +119,17 @@ struct bit_or_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{FWD(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{FWD(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
-        -> decltype(auto)
     { return left(FWD(t)); }
 };
 
@@ -147,14 +141,14 @@ constexpr inline bit_or_fn bit_or;
 struct bit_xor_fn
 {
     template <typename T, bool Left>
-    struct curried
+    struct partial
     {
     private:
         T _t;
 
     public:
         template <typename U> requires std::constructible_from<T, U>
-        constexpr explicit curried(U && u) : _t{FWD(u)} {}
+        constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
         template <typename U> requires std::regular_invocable<bit_or_fn, T, U> and Left
         constexpr decltype(auto) operator()(U && u) const noexcept(noexcept(_t ^ FWD(u)))
@@ -182,27 +176,24 @@ struct bit_xor_fn
 
     template <typename T>
     constexpr
-    static auto left(T && t) noexcept(noexcept(curried<T, true>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, true>{FWD(t)}; }
+    static auto left(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, true>{FWD(t)}; }
 
     template <typename T>
     constexpr
-    static auto right(T && t) noexcept(noexcept(curried<T, false>{FWD(t)}))
-        -> decltype(auto)
-    { return curried<T, false>{FWD(t)}; }
+    static auto right(T && t) noexcept(noexcept(partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}))
+    { return partial<std::unwrap_ref_decay_t<T>, false>{FWD(t)}; }
 
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
-        -> decltype(auto)
     { return left(FWD(t)); }
 };
 
 constexpr inline bit_xor_fn bit_xor;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ...................................bit_not................................... //
+// ...................................bit_not.................................. //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct bit_not_fn
 {
