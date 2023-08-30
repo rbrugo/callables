@@ -14,10 +14,7 @@ using namespace std::literals;
 #define DECLARE(EXPR) std::tuple{EXPR, #EXPR}
 
 namespace test {
-struct external_apply
-{
-    int x;
-};
+struct external_apply { int x; };
 
 template <typename Fn>
 auto apply(Fn && fn, external_apply const & obj) noexcept -> decltype(auto)
@@ -28,6 +25,16 @@ struct member_apply
     int x;
     template <typename Fn>
     constexpr auto apply(Fn && fn) noexcept -> decltype(auto) { return std::forward<Fn>(fn)(x); }
+};
+
+struct external_get { std::array<int, 3> x; };
+template <std::size_t N>
+auto get(external_get obj) { return get<N>(obj.x); }
+
+struct member_get
+{
+    std::array<int, 3> x;
+    template <std::size_t N> auto get() { return std::get<N>(x); }
 };
 }  // namespace test
 
@@ -119,6 +126,24 @@ int main()
             expect(construct<multiple>.from_tuple(std::tuple{1, 3}) == multiple(3, 1));
             expect(construct<overloaded>.from_tuple(std::tuple{10}) == overloaded(10));
             expect(construct<overloaded>.from_tuple(std::tuple{empty{}}) == overloaded{empty{}});
+        };
+    };
+
+    "get_fn"_test = [] {
+        using brun::get;
+        should("extract N-th value using get") = []{
+            auto example = std::tuple{1, 2., std::string_view{"three"}};
+            auto external_get = test::external_get{{1, 2, 3}};
+            auto member_get = test::external_get{{1, 2, 3}};
+            expect(get<0>(example) == 1_i);
+            expect(get<1>(example) == 2._d);
+            expect(get<2>(example) == std::string_view{"three"});
+            expect(get<0>(external_get) == 1_i);
+            expect(get<1>(external_get) == 2_i);
+            expect(get<2>(external_get) == 3_i);
+            expect(get<0>(member_get) == 1_i);
+            expect(get<1>(member_get) == 2_i);
+            expect(get<2>(member_get) == 3_i);
         };
     };
 }

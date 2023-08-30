@@ -16,6 +16,12 @@
 namespace brun
 {
 
+// apply
+// compose
+// identity
+// construct
+// get
+
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -209,6 +215,21 @@ public:
 
 template <typename T>
 constexpr inline construct_fn<T> construct;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................GET..................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+template <std::size_t N>
+struct get_fn
+{
+    template <typename Obj>
+    constexpr CB_STATIC
+    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(std::forward<Obj>(obj))))
+    { return get<N>(std::forward<Obj>(obj)); }
+};
+
+template <std::size_t N>
+constexpr inline get_fn<N> get;
 
 } // namespace brun
 
