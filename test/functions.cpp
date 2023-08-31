@@ -130,20 +130,27 @@ int main()
     };
 
     "get_fn"_test = [] {
-        using brun::get;
         should("extract N-th value using get") = []{
             auto example = std::tuple{1, 2., std::string_view{"three"}};
             auto external_get = test::external_get{{1, 2, 3}};
             auto member_get = test::external_get{{1, 2, 3}};
-            expect(get<0>(example) == 1_i);
-            expect(get<1>(example) == 2._d);
-            expect(get<2>(example) == std::string_view{"three"});
-            expect(get<0>(external_get) == 1_i);
-            expect(get<1>(external_get) == 2_i);
-            expect(get<2>(external_get) == 3_i);
-            expect(get<0>(member_get) == 1_i);
-            expect(get<1>(member_get) == 2_i);
-            expect(get<2>(member_get) == 3_i);
+            expect(brun::get<0>(example) == 1_i);
+            expect(brun::get<1>(example) == 2._d);
+            expect(brun::get<2>(example) == std::string_view{"three"});
+            expect(brun::get<0>(external_get) == 1_i);
+            expect(brun::get<1>(external_get) == 2_i);
+            expect(brun::get<2>(external_get) == 3_i);
+            expect(brun::get<0>(member_get) == 1_i);
+            expect(brun::get<1>(member_get) == 2_i);
+            expect(brun::get<2>(member_get) == 3_i);
+        };
+
+        should("eventually return a reference") = [] {
+            auto tup = std::tuple{1, 2, 3};
+            brun::get<0>(tup) = 2;
+            brun::get<1>(tup) = 4;
+            brun::get<2>(tup) = 6;
+            expect(tup == std::tuple{2, 4, 6});
         };
     };
 }

@@ -165,6 +165,7 @@ struct identity_fn
 
     template <typename T>
     constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
+        -> decltype(auto)
     { return std::forward<T &&>(t); }
 };
 
@@ -184,6 +185,7 @@ private:
         constexpr CB_STATIC
         auto operator()(std::tuple<Args...> && args) CB_CONST
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
+            -> decltype(auto)
         {
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
                 return T(std::get<I>(args)...);
@@ -195,6 +197,7 @@ private:
         constexpr CB_STATIC
         auto operator()(std::tuple<Args...> const & args) CB_CONST
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
+            -> decltype(auto)
         {
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
                 return T(std::get<I>(args)...);
@@ -210,6 +213,7 @@ public:
     constexpr CB_STATIC
     auto operator()(Args &&... args) CB_CONST
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
+        -> decltype(auto)
     { return T(std::forward<Args>(args)...); }
 };
 
@@ -225,6 +229,7 @@ struct get_fn
     template <typename Obj>
     constexpr CB_STATIC
     auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(std::forward<Obj>(obj))))
+        -> decltype(auto)
     { return get<N>(std::forward<Obj>(obj)); }
 };
 
