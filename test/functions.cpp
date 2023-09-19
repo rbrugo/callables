@@ -153,6 +153,28 @@ int main()
             expect(tup == std::tuple{2, 4, 6});
         };
     };
+
+    "at_fn"_test = [] {
+        auto ct = std::vector{1, 2, 3};
+        should("get the N-th value using `at`") = [&ct] {
+            expect(brun::at(0)(ct) == 1_i);
+            expect(brun::at(1)(ct) == 2_i);
+            expect(brun::at(2)(ct) == 3_i);
+            expect(throws([&]{ brun::at(3)(ct); })) << "index 3 is out of range";
+        };
+        should("get the N-th value using `[]`") = [&ct] {
+            expect(brun::at[0](ct) == 1_i);
+            expect(brun::at[1](ct) == 2_i);
+            expect(brun::at[2](ct) == 3_i);
+        };
+        should("forward-return the correct type") = [] {
+            auto v = std::vector{0, 1, 2, 3};
+            for (auto i = 0u; i < v.size(); ++i) {
+                brun::at(v, i) = i * i;
+                expect(brun::at[i](v) == _i(i * i));
+            }
+        };
+    };
 }
 
 #undef DECLARE

@@ -39,6 +39,7 @@ auto store_all = take_stuff | svw::transform(brun::construct<store>);
 - `identity`
 - `construct<T>`, `construct<T>.from_tuple`
 - `get<N>`
+- `at(N)`, `at[N]`
 
 ***Equality and ordering:***
 - `equal_to`

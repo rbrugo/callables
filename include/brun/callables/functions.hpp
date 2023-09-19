@@ -8,6 +8,12 @@
 #ifndef BRUN_CALLABLES_FUNCTIONS_HPP
 #define BRUN_CALLABLES_FUNCTIONS_HPP
 
+#if defined(__cpp_multidimensional_subscript) && __cpp_multidimensional_subscript >= 202110L
+#define HAS_MD_SUBSCRIPT 1
+#else
+#define HAS_MD_SUBSCRIPT 0
+#endif
+
 #include <utility>
 #include <functional>
 #include "detail.hpp"
@@ -15,12 +21,14 @@
 
 namespace brun
 {
+#define FWD(x) std::forward<decltype(x)>(x)
 
 // apply
 // compose
 // identity
 // construct
 // get
+// at
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -40,34 +48,34 @@ struct apply_fn
             requires detail::applicable<Fn, Tuple>
         constexpr
         auto operator()(Tuple && tp)
-            noexcept(noexcept(apply_fn{}(_fn, std::forward<Tuple>(tp))))
+            noexcept(noexcept(apply_fn{}(_fn, FWD(tp))))
             -> decltype(auto)
-        { return apply_fn{}(_fn, std::forward<Tuple>(tp)); }
+        { return apply_fn{}(_fn, FWD(tp)); }
     };
 
     template <typename Fn, typename Tuple>
         requires detail::direct_applicable<Fn, Tuple>
     constexpr CB_STATIC
     auto operator()(Fn && fn, Tuple && args) CB_CONST
-        noexcept(noexcept(apply(std::forward<Fn>(fn), std::forward<Tuple>(args))))
+        noexcept(noexcept(apply(FWD(fn), FWD(args))))
         -> decltype(auto)
-    { return apply(std::forward<Fn>(fn), std::forward<Tuple>(args)); }
+    { return apply(FWD(fn), FWD(args)); }
 
     template <typename Fn, typename T>
         requires detail::has_member_apply_with<T, Fn>
     constexpr CB_STATIC
     auto operator()(Fn && fn, T && obj) CB_CONST
-        noexcept(noexcept(std::forward<T>(obj).apply(std::forward<Fn>(fn))))
+        noexcept(noexcept(FWD(obj).apply(FWD(fn))))
         -> decltype(auto)
-    { return std::forward<T>(obj).apply(std::forward<Fn>(fn)); }
+    { return FWD(obj).apply(FWD(fn)); }
 
     template <typename Fn>
     constexpr CB_STATIC
     auto operator()(Fn && fn) CB_CONST
-        noexcept(noexcept(partial{std::forward<Fn>(fn)}))
+        noexcept(noexcept(partial{FWD(fn)}))
         -> decltype(auto)
     {
-        return partial{std::forward<Fn>(fn)};
+        return partial{FWD(fn)};
     }
 };
 
@@ -103,7 +111,6 @@ struct compose_fn
         constexpr
         static auto _call_impl(Tuple && fns, Args &&... args) -> decltype(auto)
         {
-#           define FWD(x) std::forward<decltype(x)>(x)
 #           define GET(idx, tpl) std::get<idx>(std::forward<Tuple>(tpl))
             if constexpr (I == sizeof...(Fns) - 1) {
                 if constexpr (std::invocable<std::tuple_element_t<I, std::remove_cvref_t<Tuple>>, Args...>) {
@@ -125,7 +132,6 @@ struct compose_fn
                 }
             }
 #           undef GET
-#           undef FWD
         }
     public:
         template <typename ...Fns2>
@@ -236,6 +242,111 @@ struct get_fn
 template <std::size_t N>
 constexpr inline get_fn<N> get;
 
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// .....................................AT..................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct at_fn
+{
+    template <typename T, typename ...>
+    struct first_ { using type = T; };
+
+    template <typename ...N>
+    struct use_member
+    {
+        using storage_t = std::conditional_t<sizeof...(N) != 1, std::tuple<N...>, typename first_<N...>::type>;
+        storage_t indices;
+
+        template <typename Obj>
+        constexpr auto operator()(Obj && obj) -> decltype(auto)
+        {
+            if constexpr (sizeof...(N) == 1) {
+                return at_fn{}(FWD(obj), indices);
+            } else {
+                return std::apply([obj=FWD(obj)](N &&... args) {
+                    return at_fn{}(FWD(obj), FWD(args)...);
+                }, indices);
+            }
+        }
+    };
+
+#if HAS_MD_SUBSCRIPT
+    template <typename ...N>
+    struct use_op
+    {
+        using storage_t = std::conditional_t<sizeof...(N) != 1, std::tuple<N...>, typename first_<N...>::type>;
+        storage_t indices;
+
+        template <typename Obj>
+        constexpr auto operator()(Obj && obj) -> decltype(auto)
+        {
+            if constexpr (sizeof...(N) == 1) {
+                return at_fn{}[FWD(obj), indices];
+            } else {
+                return std::apply([obj=FWD(obj)](N &&... args) {
+                    return at_fn{}[FWD(obj), FWD(args)...];
+                }, indices);
+            }
+        }
+    };
+#else
+    template <typename N>
+    struct use_op
+    {
+        N index;
+
+        template <typename Obj>
+        constexpr auto operator()(Obj && obj) -> decltype(auto)
+        {
+            return FWD(obj)[index];
+        }
+    };
+#endif
+
+
+    template <typename ...N>
+        requires (sizeof...(N) > 0)
+    constexpr CB_STATIC
+    auto operator()(N &&... n) CB_CONST noexcept -> decltype(auto)
+    { return use_member<std::unwrap_ref_decay_t<N>...>{FWD(n)...}; }
+
+    template <typename Obj, typename ...N>
+        requires (sizeof...(N) > 0)
+    constexpr CB_STATIC
+    auto operator()(Obj && obj, N &&... n) CB_CONST noexcept(noexcept(FWD(obj).at(FWD(n)...)))
+        -> decltype(auto)
+    { return FWD(obj).at(FWD(n)...); }
+
+#if HAS_MD_SUBSCRIPT
+    template <typename ...N>
+        requires (sizeof...(N) > 0)
+    constexpr CB_STATIC
+    auto operator[](N &&... n) CB_CONST noexcept -> decltype(auto)
+    { return use_op<std::unwrap_ref_decay_t<N>...>{FWD(n)...}; }
+
+    template <typename Obj, typename ...N>
+        requires (sizeof...(N) > 0)
+    constexpr CB_STATIC
+    auto operator[](Obj && obj, N &&... n) CB_CONST noexcept(noexcept(FWD(obj)[FWD(n)...]))
+        -> decltype(auto)
+    { return FWD(obj)[FWD(n)...]; }
+#else
+    template <typename N>
+    constexpr CB_STATIC
+    auto operator[](N && n) CB_CONST noexcept -> decltype(auto)
+    { return use_op<std::unwrap_ref_decay_t<N>>{FWD(n)}; }
+
+    template <typename Obj, typename N>
+    constexpr CB_STATIC
+    auto operator[](Obj && obj, N && n) CB_CONST noexcept(noexcept(FWD(obj)[FWD(n)]))
+        -> decltype(auto)
+    { return FWD(obj)[FWD(n)]; }
+#endif
+};
+
+constexpr inline at_fn at;
+
+#undef FWD
 } // namespace brun
 
 #endif /* BRUN_CALLABLES_FUNCTIONS_HPP */
