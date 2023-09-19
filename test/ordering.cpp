@@ -56,18 +56,18 @@ int main()
             expect(not less.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(less(std::pair{1, 2})) << "int";
-            expect(less(std::pair{1., 2.})) << "double";
-            expect(less(std::pair{"a"s, "aa"})) << "string";
+            expect(less.tuple(std::pair{1, 2})) << "int";
+            expect(less.tuple(std::pair{1., 2.})) << "double";
+            expect(less.tuple(std::pair{"a"s, "aa"})) << "string";
 
-            expect(not less(std::pair{1, 1})) << "int";
-            expect(not less(std::pair{1, 1})) << "double < int";
-            expect(not less(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(not less.tuple(std::pair{1, 1})) << "int";
+            expect(not less.tuple(std::pair{1, 1})) << "double < int";
+            expect(not less.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(less(std::tuple{1, 2})) << "int";
-            expect(less(std::tuple{1., 2.})) << "double";
-            expect(less(std::tuple{"a"s, "aa"})) << "string";
+            expect(less.tuple(std::tuple{1, 2})) << "int";
+            expect(less.tuple(std::tuple{1., 2.})) << "double";
+            expect(less.tuple(std::tuple{"a"s, "aa"})) << "string";
         };
     };
 
@@ -110,18 +110,18 @@ int main()
             expect(less_equal.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(less_equal(std::pair{1, 2})) << "int";
-            expect(less_equal(std::pair{1., 2.})) << "double";
-            expect(less_equal(std::pair{"a"s, "aa"})) << "string";
+            expect(less_equal.tuple(std::pair{1, 2})) << "int";
+            expect(less_equal.tuple(std::pair{1., 2.})) << "double";
+            expect(less_equal.tuple(std::pair{"a"s, "aa"})) << "string";
 
-            expect(less_equal(std::pair{1, 1})) << "int";
-            expect(less_equal(std::pair{1, 1})) << "double < int";
-            expect(less_equal(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(less_equal.tuple(std::pair{1, 1})) << "int";
+            expect(less_equal.tuple(std::pair{1, 1})) << "double < int";
+            expect(less_equal.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(less_equal(std::tuple{1, 2})) << "int";
-            expect(less_equal(std::tuple{1., 2.})) << "double";
-            expect(less_equal(std::tuple{"a"s, "aa"})) << "string";
+            expect(less_equal.tuple(std::tuple{1, 2})) << "int";
+            expect(less_equal.tuple(std::tuple{1., 2.})) << "double";
+            expect(less_equal.tuple(std::tuple{"a"s, "aa"})) << "string";
         };
     };
 
@@ -165,18 +165,18 @@ int main()
             expect(not greater.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(greater(std::pair{3, 2})) << "int";
-            expect(greater(std::pair{3., 2.})) << "double";
-            expect(greater(std::pair{"aaa"s, "aa"})) << "string";
+            expect(greater.tuple(std::pair{3, 2})) << "int";
+            expect(greater.tuple(std::pair{3., 2.})) << "double";
+            expect(greater.tuple(std::pair{"aaa"s, "aa"})) << "string";
 
-            expect(not greater(std::pair{1, 1})) << "int";
-            expect(not greater(std::pair{1, 1})) << "double < int";
-            expect(not greater(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(not greater.tuple(std::pair{1, 1})) << "int";
+            expect(not greater.tuple(std::pair{1, 1})) << "double < int";
+            expect(not greater.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(greater(std::tuple{3, 2})) << "int";
-            expect(greater(std::tuple{3., 2.})) << "double";
-            expect(greater(std::tuple{"aaa"s, "aa"})) << "string";
+            expect(greater.tuple(std::tuple{3, 2, 1.0})) << "int";
+            expect(greater.tuple(std::tuple{3., 2., 1})) << "double";
+            expect(greater.tuple(std::tuple{"aaa"s, "aa", "a"sv})) << "string";
         };
     };
 
@@ -219,18 +219,18 @@ int main()
             expect(greater_equal.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(greater_equal(std::pair{3, 2})) << "int";
-            expect(greater_equal(std::pair{3., 2.})) << "double";
-            expect(greater_equal(std::pair{"aaa"s, "aa"})) << "string";
+            expect(greater_equal.tuple(std::pair{3, 2})) << "int";
+            expect(greater_equal.tuple(std::pair{3., 2.})) << "double";
+            expect(greater_equal.tuple(std::pair{"aaa"s, "aa"})) << "string";
 
-            expect(greater_equal(std::pair{1, 1})) << "int";
-            expect(greater_equal(std::pair{1, 1})) << "double < int";
-            expect(greater_equal(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(greater_equal.tuple(std::pair{1, 1})) << "int";
+            expect(greater_equal.tuple(std::pair{1, 1})) << "double < int";
+            expect(greater_equal.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(greater_equal(std::tuple{3, 2})) << "int";
-            expect(greater_equal(std::tuple{3., 2.})) << "double";
-            expect(greater_equal(std::tuple{"aaa"s, "aa"})) << "string";
+            expect(greater_equal.tuple(std::tuple{3, 2, 0.1})) << "int";
+            expect(greater_equal.tuple(std::tuple{3., 2., 1})) << "double";
+            expect(greater_equal.tuple(std::tuple{"aaa"s, "aa", "a"sv})) << "string";
         };
     };
 }

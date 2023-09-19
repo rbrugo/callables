@@ -46,7 +46,7 @@ int main()
          };
          should("callable with a tuple argument") = [&] {
              for (auto p : input) {
-                 expect(bit_and(p) == _i(p.first & p.second));
+                 expect(bit_and.tuple(p) == _i(p.first & p.second));
              }
          };
     };
@@ -75,7 +75,7 @@ int main()
          };
          should("callable with a tuple argument") = [&] {
              for (auto p : input) {
-                 expect(bit_or(p) == _i(p.first | p.second));
+                 expect(bit_or.tuple(p) == _i(p.first | p.second));
              }
          };
     };
@@ -104,7 +104,7 @@ int main()
          };
          should("callable with a tuple argument") = [&] {
              for (auto p : input) {
-                 expect(bit_xor(p) == _i(p.first ^ p.second));
+                 expect(bit_xor.tuple(p) == _i(p.first ^ p.second));
              }
          };
     };

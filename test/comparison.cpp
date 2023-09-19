@@ -57,16 +57,16 @@ int main()
             expect(equal_to.right(nullptr)(doppleganger));
         };
         should("callable with a pair argument") = [=] {
-            expect(equal_to(std::pair{1, 1}));
-            expect(equal_to(std::pair{1., 1.}));
-            expect(equal_to(std::pair{"hello"s, "hello"}));
-            expect(equal_to(std::pair{v.begin(), v.end()}));
+            expect(equal_to.tuple(std::pair{1, 1}));
+            expect(equal_to.tuple(std::pair{1., 1.}));
+            expect(equal_to.tuple(std::pair{"hello"s, "hello"}));
+            expect(equal_to.tuple(std::pair{v.begin(), v.end()}));
         };
-        should("callable with a binary tuple argument") = [=] {
-            expect(equal_to(std::tuple{125, 125}));
-            expect(equal_to(std::tuple{-150., -150.}));
-            expect(equal_to(std::tuple{""s, ""}));
-            expect(equal_to(std::tuple{v.begin(), v.end()}));
+        should("callable with a tuple argument") = [=] {
+            expect(equal_to.tuple(std::tuple{125, 125, 125}));
+            expect(equal_to.tuple(std::tuple{-150., -150., -150., -150.}));
+            expect(equal_to.tuple(std::tuple{""s, "", ""sv}));
+            expect(equal_to.tuple(std::tuple{v.begin(), v.end()}));
         };
     };
 
@@ -105,16 +105,16 @@ int main()
             expect(not_equal_to.right(nullptr)(oddball));
         };
         should("be callable with a pair argument") = [=] {
-            expect(not_equal_to(std::pair{1, 2}));
-            expect(not_equal_to(std::pair{1., 0.}));
-            expect(not_equal_to(std::pair{"hello"s, "bye"}));
-            expect(not_equal_to(std::pair{v.begin(), v.end()}));
+            expect(not_equal_to.tuple(std::pair{1, 2}));
+            expect(not_equal_to.tuple(std::pair{1., 0.}));
+            expect(not_equal_to.tuple(std::pair{"hello"s, "bye"}));
+            expect(not_equal_to.tuple(std::pair{v.begin(), v.end()}));
         };
         should("be callable with a binary tuple argument") = [=] {
-            expect(not_equal_to(std::tuple{125, 126}));
-            expect(not_equal_to(std::tuple{150., -151.}));
-            expect(not_equal_to(std::tuple{""s, "0"}));
-            expect(not_equal_to(std::tuple{v.begin(), v.end()}));
+            expect(not_equal_to.tuple(std::tuple{125, 126}));
+            expect(not_equal_to.tuple(std::tuple{150., -151., -152}));
+            expect(not_equal_to.tuple(std::tuple{""s, "0", "00"sv}));
+            expect(not_equal_to.tuple(std::tuple{v.begin(), v.end()}));
         };
     };
 }

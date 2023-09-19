@@ -13,6 +13,8 @@
 namespace brun::detail
 {
 
+#define FWD(x) static_cast<decltype(x) &&>(x)
+
 template <typename T1, typename ...Pack1>
 struct pairwise_constructible
 {
@@ -35,24 +37,20 @@ template <typename ...Args> struct type_list    {};
 template <typename T>       struct type_list<T> { using type = T;    };
 template <>                 struct type_list< > { using type = void; };
 
-template <typename Fn, typename ...Fns>
-struct nested_invoke_result
-{
-private:
-    template <typename ...Args>
-    static auto _with_impl(type_list<Args...>) {
-        if constexpr (sizeof...(Fns) == 0) {
-            return type_list<std::invoke_result_t<Fn, Args...>>{};
-        } else {
-            using nested_fs = nested_invoke_result<Fns...>;
-            using result = nested_fs::template with<Args...>;
-            return type_list<std::invoke_result_t<Fn, result>>{};
-        }
-    }
-public:
-    template <typename ...Args>
-    using with = decltype(_with_impl(type_list<Args...>{}))::type;
+template <typename T, typename Fn>
+concept has_member_apply_with = requires(T && t, Fn && fn) {
+    { FWD(t).apply(FWD(fn)) };
 };
+
+template <typename Fn, typename Tuple>
+concept direct_applicable = requires(Fn && fn, Tuple && args) {
+    { apply(FWD(fn), FWD(args)) };
+};
+
+template <typename Fn, typename Tuple>
+concept applicable = direct_applicable<Fn, Tuple> or has_member_apply_with<Tuple, Fn>;
+
+#undef FWD
 
 } // namespace brun::detail
 

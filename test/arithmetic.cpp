@@ -43,18 +43,18 @@ int main()
              expect(plus.right("a"s)("bc"s) == "bca"s);
          };
          should("callable with a pair argument") = [] {
-             expect(plus(std::pair{1, 2}) == 3_i);
-             expect(plus(std::pair{1., -1.}) == 0._d);
-             expect(plus(std::pair{"a"s, "bc"s}) == "abc"s);
+             expect(plus.tuple(std::pair{1, 2}) == 3_i);
+             expect(plus.tuple(std::pair{1., -1.}) == 0._d);
+             expect(plus.tuple(std::pair{"a"s, "bc"s}) == "abc"s);
 
              int x = 0;
              int y = 0;
-             expect(plus(std::pair<int const &, int const &>(x, y)) == 0);
+             expect(plus.tuple(std::pair<int const &, int const &>(x, y)) == 0);
          };
          should("callable with a binary tuple argument") = [] {
-             expect(plus(std::tuple{1, 2}) == 3_i);
-             expect(plus(std::tuple{1., -1.}) == 0._d);
-             expect(plus(std::tuple{"a"s, "bc"s}) == "abc"s);
+             expect(plus.tuple(std::tuple{1, 2}) == 3_i);
+             expect(plus.tuple(std::tuple{1., -1.}) == 0._d);
+             expect(plus.tuple(std::tuple{"a"s, "bc"s}) == "abc"s);
          };
     };
 
@@ -77,15 +77,15 @@ int main()
             expect(minus.right(1.)(-1.) == -2._d);
         };
         should("callable with a pair argument") = [] {
-            expect(minus(std::pair{1, 2}) == -1_i);
-            expect(minus(std::pair{1., -1.}) == 2._d);
+            expect(minus.tuple(std::pair{1, 2}) == -1_i);
+            expect(minus.tuple(std::pair{1., -1.}) == 2._d);
             int x = 0;
             int y = 0;
-            expect(minus(std::pair<int const &, int const &>(x, y)) == 0);
+            expect(minus.tuple(std::pair<int const &, int const &>(x, y)) == 0);
         };
         should("callable with a binary tuple argument") = [] {
-            expect(minus(std::tuple{1, 2}) == -1_i);
-            expect(minus(std::tuple{1., -1.}) == 2._d);
+            expect(minus.tuple(std::tuple{1, 2}) == -1_i);
+            expect(minus.tuple(std::tuple{1., -1.}) == 2._d);
         };
     };
 
@@ -108,12 +108,12 @@ int main()
             expect(multiplies.right(1.)(-1.) == -1._d);
         };
         should("callable with a pair argument") = [] {
-            expect(multiplies(std::pair{1, 2}) == 2_i);
-            expect(multiplies(std::pair{1., -1.}) == -1._d);
+            expect(multiplies.tuple(std::pair{1, 2}) == 2_i);
+            expect(multiplies.tuple(std::pair{1., -1.}) == -1._d);
         };
         should("callable with a binary tuple argument") = [] {
-            expect(multiplies(std::tuple{1, 2}) == 2_i);
-            expect(multiplies(std::tuple{1., -1.}) == -1._d);
+            expect(multiplies.tuple(std::tuple{1, 2}) == 2_i);
+            expect(multiplies.tuple(std::tuple{1., -1.}) == -1._d);
         };
     };
 
@@ -140,14 +140,14 @@ int main()
             expect(divides.right("abc")("def"_p).string() == "def/abc"_b) << divides.right("abc")("def"_p);
         };
         should("callable with a pair argument") = [] {
-            expect(divides(std::pair{10, 2}) == 5_i);
-            expect(divides(std::pair{20., -20.}) == -1._d);
-            expect(divides(std::pair{"/usr"_p, "include"_p}).string() == "/usr/include"_b);
+            expect(divides.tuple(std::pair{10, 2}) == 5_i);
+            expect(divides.tuple(std::pair{20., -20.}) == -1._d);
+            expect(divides.tuple(std::pair{"/usr"_p, "include"_p}).string() == "/usr/include"_b);
         };
         should("callable with a binary tuple argument") = [] {
-            expect(divides(std::tuple{10, 2}) == 5_i);
-            expect(divides(std::tuple{20., -20.}) == -1._d);
-            expect(divides(std::tuple{"/usr"_p, "include"_p}).string() == "/usr/include"_b);
+            expect(divides.tuple(std::tuple{10, 2}) == 5_i);
+            expect(divides.tuple(std::tuple{20., -20.}) == -1._d);
+            expect(divides.tuple(std::tuple{"/usr"_p, "include"_p}).string() == "/usr/include"_b);
         };
     };
 
