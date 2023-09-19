@@ -6,7 +6,7 @@ from conan.tools.build import check_min_cppstd
 
 class Callables(ConanFile):
     name = "callables"
-    version = "0.1.0"
+    version = "0.2.0"
     # package_type = "library"
 
     # Optional metadata
