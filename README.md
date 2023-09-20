@@ -55,3 +55,7 @@ auto store_all = take_stuff | svw::transform(brun::construct<store>);
 - `multiplies`
 - `divides`
 - `negate`
+
+All bit, arithmetic, equality and ordering operators have a member `.tuple` that accepts a tuple
+and computes the operation on its members. For example:
+`static_assert(plus.tuple(std::pair{2, 3}) == 5)`

@@ -34,7 +34,8 @@ public:
     constexpr explicit partial(U && u) : _t{FWD(u)} {}
 
     template <typename ...U> requires std::regular_invocable<Fn, T, U...>
-    constexpr decltype(auto) operator()(U &&... u) const noexcept(noexcept(Fn{}(_t, FWD(u)...)))
+    [[nodiscard]] constexpr
+    auto operator()(U &&... u) const noexcept(noexcept(Fn{}(_t, FWD(u)...))) -> decltype(auto)
     { return Fn{}(_t, FWD(u)...); }
 };
 
@@ -48,7 +49,8 @@ public:
     template <typename U> requires std::constructible_from<T, U>
     constexpr explicit right_partial(U && u) : _t{FWD(u)} {}
     template <typename ...U> requires std::regular_invocable<Fn, U..., T>
-    constexpr decltype(auto) operator()(U &&... u) const noexcept(noexcept(Fn{}(FWD(u)..., _t)))
+    [[nodiscard]] constexpr
+    auto operator()(U &&... u) const noexcept(noexcept(Fn{}(FWD(u)..., _t))) -> decltype(auto)
     { return Fn{}(FWD(u)..., _t); }
 };
 
@@ -59,17 +61,17 @@ struct binary_fn
     using is_transparent = void;
 
     template <typename T>
-    constexpr
+    [[nodiscard]] constexpr
     static auto left(T && t) noexcept(noexcept(partial<base, std::unwrap_ref_decay_t<T>>{FWD(t)}))
     { return partial<base, std::unwrap_ref_decay_t<T>>{FWD(t)}; }
 
     template <typename T>
-    constexpr
+    [[nodiscard]] constexpr
     static auto right(T && t) noexcept(noexcept(right_partial<base, std::unwrap_ref_decay_t<T>>{FWD(t)}))
     { return right_partial<base, std::unwrap_ref_decay_t<T>>{FWD(t)}; }
 
     template <typename T>
-    constexpr CB_STATIC
+    [[nodiscard]] constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept(noexcept(left(FWD(t))))
     { return left(FWD(t)); }
 };
@@ -77,22 +79,22 @@ struct binary_fn
 template <typename Base>
 struct compare_tuple_fn
 {
-    using base = Base;
     template <typename Tuple>
         requires (detail::tuple_size<Tuple> > 1)
-    constexpr static
-    auto tuple(Tuple && p) -> decltype(auto)
+    [[nodiscard]] constexpr CB_STATIC
+    auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
         return [p=FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
-            return (base{}(get<I>(FWD(p)), get<I + 1>(FWD(p))) and ...);
+            return (Base{}(get<I>(FWD(p)), get<I + 1>(FWD(p))) and ...);
         }(std::make_index_sequence<detail::tuple_size<Tuple> - 1>{});
     }
 };
 
 template <typename Base>
-struct compare_operator : public binary_fn<Base>, compare_tuple_fn<Base>
+struct compare_operator : public binary_fn<Base>
 {
     using binary_fn<Base>::operator();
+    [[no_unique_address]] compare_tuple_fn<Base> tuple;
 };
 
 template <typename Base>
@@ -112,17 +114,19 @@ struct recursive_tuple_fn
 
     template <typename Tuple>
         requires (detail::tuple_size<Tuple> > 0)
-    constexpr static
-    auto tuple(Tuple && p) -> decltype(auto)
+    [[nodiscard]]
+    constexpr CB_STATIC
+    auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
         return _impl<0>(FWD(p));
     }
 };
 
 template <typename Base>
-struct arithmetic_operator : public binary_fn<Base>, recursive_tuple_fn<Base>
+struct arithmetic_operator : public binary_fn<Base>
 {
     using binary_fn<Base>::operator();
+    [[no_unique_address]] recursive_tuple_fn<Base> tuple;
 };
 
 #undef FWD

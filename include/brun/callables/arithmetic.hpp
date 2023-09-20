@@ -2,7 +2,7 @@
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
  * @file        : operators
  * @created     : Monday Dec 13, 2021 13:24:01 CET
- * @description : 
+ * @description :
  * */
 
 #ifndef BRUN_CALLABLES_ARITHMETIC_HPP
@@ -19,7 +19,7 @@ namespace brun
 // divides
 // negate
 
-#define FWD(x) std::forward<decltype(x)>(x)
+#define FWD(x) static_cast<decltype(x) &&>(x)
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................PLUS.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -43,7 +43,7 @@ constexpr inline plus_fn plus;
 struct minus_fn : public arithmetic_operator<minus_fn>
 {
     template <typename T, typename U>
-        requires requires(T && t, U && u) { FWD(t) +-FWD(u); }
+        requires requires(T && t, U && u) { FWD(t) - FWD(u); }
     constexpr CB_STATIC
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(FWD(t) - FWD(u)))
         -> decltype(auto)

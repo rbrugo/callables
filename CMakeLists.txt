@@ -5,7 +5,7 @@
 ######################################################################
 cmake_minimum_required(VERSION 3.16.2)
 
-project(callables VERSION 0.1.0 LANGUAGES CXX)
+project(callables VERSION 0.2.1 LANGUAGES CXX)
 include(cmake/general.cmake)
 
 add_library(callables INTERFACE)
