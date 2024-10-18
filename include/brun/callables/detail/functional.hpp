@@ -5,15 +5,15 @@
  * @description : 
  * */
 
-#ifndef BRUN_CALLABLES_DETAIL_FUNCTIONAL_HPP
-#define BRUN_CALLABLES_DETAIL_FUNCTIONAL_HPP
+#ifndef CB_DETAIL_FUNCTIONAL_HPP
+#define CB_DETAIL_FUNCTIONAL_HPP
 
 #include <concepts>
 
-namespace brun::detail
+namespace callables::detail
 {
 
-#define FWD(x) static_cast<decltype(x) &&>(x)
+#define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 template <typename T1, typename ...Pack1>
 struct pairwise_constructible
@@ -39,19 +39,19 @@ template <>                 struct type_list< > { using type = void; };
 
 template <typename T, typename Fn>
 concept has_member_apply_with = requires(T && t, Fn && fn) {
-    { FWD(t).apply(FWD(fn)) };
+    { CB_FWD(t).apply(CB_FWD(fn)) };
 };
 
 template <typename Fn, typename Tuple>
 concept direct_applicable = requires(Fn && fn, Tuple && args) {
-    { apply(FWD(fn), FWD(args)) };
+    { apply(CB_FWD(fn), CB_FWD(args)) };
 };
 
 template <typename Fn, typename Tuple>
 concept applicable = direct_applicable<Fn, Tuple> or has_member_apply_with<Tuple, Fn>;
 
-#undef FWD
+#undef CB_FWD
 
-} // namespace brun::detail
+} // namespace callables::detail
 
-#endif /* BRUN_CALLABLES_DETAIL_FUNCTIONAL_HPP */
+#endif /* CB_DETAIL_FUNCTIONAL_HPP */
