@@ -53,6 +53,7 @@ namespace callables
 // construct
 // get
 // at
+// value_or
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -343,6 +344,38 @@ struct at_fn
 };
 
 constexpr inline at_fn at;
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ..................................VALUE_OR.................................. //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct value_or_fn
+{
+    template <class Opt, typename T>
+    requires requires(Opt opt, T t) {
+        { static_cast<bool>(opt) };
+        { *opt };
+        requires std::convertible_to<T, decltype(*opt)>;
+    }
+    constexpr CB_STATIC
+    auto operator()(Opt && opt, T && t) CB_CONST noexcept
+        -> std::remove_cvref_t<decltype(*opt)>
+    {
+        if (static_cast<bool>(opt)) {
+            return *CB_FWD(opt);
+        }
+        return CB_FWD(t);
+    }
+
+    template <typename T>
+    constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept
+    {
+        return right_partial<value_or_fn, std::unwrap_ref_decay_t<T>>{CB_FWD(t)};
+    }
+};
+
+constexpr inline value_or_fn value_or;
 
 #undef CB_FWD
 } // namespace callables

@@ -41,6 +41,7 @@ auto store_all = take_stuff | svw::transform(cb::construct<store>);
 - `construct<T>`, `construct<T>.from_tuple`
 - `get<N>`
 - `at(N)`, `at[N]`
+- `value_or`
 
 ***Equality and ordering:***
 - `equal_to`
