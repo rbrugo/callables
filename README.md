@@ -3,6 +3,7 @@ A set of composable and partially-applicable function objects to simplify the us
 
 ## Example of usage:
 ```cpp
+namespace cb = callables;
 namespace svw = std::views;
 namespace srg = std::ranges;
 
@@ -18,12 +19,12 @@ struct store
 };
 
 auto boxes = std::vector<box>{...};
-std::ranges::sort(boxes, brun::less_equal);
+std::ranges::sort(boxes, cb::less_equal);
 
-auto heavy = boxes | svw::filter(boxes, brun::greater_equal(10), &box::weight);
-auto my_boxes = heavy | svw::filter(heavy, brun::equals("Joe"), &box::label);
-auto take_stuff = my_boxes | svw::transform(brun::minus(10), &box::weight);
-auto store_all = take_stuff | svw::transform(brun::construct<store>);
+auto heavy = boxes | svw::filter(boxes, cb::greater_equal(10), &box::weight);
+auto my_boxes = heavy | svw::filter(heavy, cb::equals("Joe"), &box::label);
+auto take_stuff = my_boxes | svw::transform(cb::minus(10), &box::weight);
+auto store_all = take_stuff | svw::transform(cb::construct<store>);
 ```
 
 ## Function objects
