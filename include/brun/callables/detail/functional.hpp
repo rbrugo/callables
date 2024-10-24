@@ -50,6 +50,15 @@ concept direct_applicable = requires(Fn && fn, Tuple && args) {
 template <typename Fn, typename Tuple>
 concept applicable = direct_applicable<Fn, Tuple> or has_member_apply_with<Tuple, Fn>;
 
+
+template <typename T>
+concept character = std::same_as<char, T>
+                 or std::same_as<unsigned char, T> or std::same_as<signed char, T>
+                 or std::same_as<wchar_t, T> or std::same_as<char8_t, T>;
+
+template <typename T>
+concept numeric = std::integral<T> and not std::same_as<bool, T> and not character<T>;
+
 #undef CB_FWD
 
 } // namespace callables::detail

@@ -55,7 +55,7 @@ struct less_fn : public compare_operator<less_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) < CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_less(t, u);
         } else {
             return CB_FWD(t) < CB_FWD(u);
@@ -78,7 +78,7 @@ struct less_equal_fn : public compare_operator<less_equal_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) <= CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_less_equal(t, u);
         } else {
             return CB_FWD(t) <= CB_FWD(u);
@@ -101,7 +101,7 @@ struct greater_fn : public compare_operator<greater_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) > CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_greater(t, u);
         } else {
             return CB_FWD(t) > CB_FWD(u);
@@ -124,7 +124,7 @@ struct greater_equal_fn : public compare_operator<greater_equal_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) >= CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_greater_equal(t, u);
         } else {
             return CB_FWD(t) >= CB_FWD(u);

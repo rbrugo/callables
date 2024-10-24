@@ -33,6 +33,7 @@
 #define CB_COMPARISON_HPP
 
 #include <utility>
+#include "detail/functional.hpp"
 #include "detail/partial.hpp"
 
 namespace callables
@@ -54,7 +55,7 @@ struct equal_to_fn : public compare_operator<equal_to_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) == CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_equal(t, u);
         } else {
             return CB_FWD(t) == CB_FWD(u);
@@ -77,7 +78,7 @@ struct not_equal_to_fn : public compare_operator<not_equal_to_fn>
     auto operator()(T && t, U && u) CB_CONST noexcept(noexcept(CB_FWD(t) != CB_FWD(u)))
         -> decltype(auto)
     {
-        if constexpr (std::integral<std::remove_cvref_t<T>> and std::integral<std::remove_cvref_t<U>>) {
+        if constexpr (detail::numeric<std::remove_cvref_t<T>> and detail::numeric<std::remove_cvref_t<U>>) {
             return std::cmp_not_equal(t, u);
         } else {
             return CB_FWD(t) != CB_FWD(u);
