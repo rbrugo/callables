@@ -38,6 +38,7 @@
 #define HAS_MD_SUBSCRIPT 0
 #endif
 
+#include <span>
 #include <utility>
 #include <functional>
 #include "detail/partial.hpp"
@@ -54,6 +55,7 @@ namespace callables
 // get
 // at
 // value_or
+// from_container
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -344,6 +346,91 @@ struct at_fn
 };
 
 constexpr inline at_fn at;
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...............................FROM_CONTAINER............................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct from_container_fn
+{
+    template <std::ranges::range Cont, typename Idx>
+    static constexpr
+    auto use_iterators(Cont && cont, Idx && idx) -> decltype(auto)
+    {
+        return *std::ranges::next(
+            std::ranges::begin(cont),
+            CB_FWD(idx),
+            std::ranges::end(cont)
+        );
+    }
+
+    template <typename Cont, typename Idx>
+    requires requires(Cont && c, Idx && i) { CB_FWD(c).at(CB_FWD(i)); }
+    static constexpr
+    auto use_at(Cont && c, Idx && i) -> decltype(auto) {
+        return CB_FWD(c).at(CB_FWD(i));
+    }
+
+    template <typename Cont, typename Idx>
+    requires requires(Cont && c, Idx && i) { CB_FWD(c)[CB_FWD(i)]; }
+    static constexpr
+    auto use_op(Cont && c, Idx && i) -> decltype(auto) {
+        return CB_FWD(c)[CB_FWD(i)];
+    }
+
+    template <typename Cont, typename Idx>
+    constexpr CB_STATIC
+    auto try_all(Cont && c, Idx && i) CB_CONST -> decltype(auto)
+    {
+        if constexpr (requires { CB_FWD(c).at(CB_FWD(i)); }) {
+            return use_at(CB_FWD(c), CB_FWD(i));
+        } else if constexpr (requires { CB_FWD(c)[CB_FWD(i)]; }) {
+            return use_op(CB_FWD(c), CB_FWD(i));
+        } else if (std::ranges::range<Cont>) {
+            return use_iterators(CB_FWD(c), CB_FWD(i));
+        } else {
+            static_assert(false, "the container must be indexable via op[], .at or iterators");
+        }
+    }
+
+    template <typename Cont, typename Idx>
+    constexpr CB_STATIC
+    auto try_unsafe(Cont && c, Idx && i) CB_CONST -> decltype(auto)
+    {
+        if constexpr (requires { CB_FWD(c)[CB_FWD(i)]; }) {
+            return use_op(CB_FWD(c), CB_FWD(i));
+        } else if (std::ranges::range<Cont>) {
+            return use_iterators(CB_FWD(c), CB_FWD(i));
+        } else {
+            static_assert(false, "the container must be indexable via op[] or iterators");
+        }
+    }
+
+    template <typename Cont, typename Idx>
+    constexpr CB_STATIC
+    auto operator()(Cont && c, Idx && i) CB_CONST -> decltype(auto)
+    {
+        return try_all(CB_FWD(c), CB_FWD(i));
+    }
+
+    template <typename T>
+    constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept
+    {
+        return partial<from_container_fn, std::unwrap_ref_decay_t<T>>{CB_FWD(t)};
+    }
+
+    template <typename T, std::size_t N>
+    constexpr CB_STATIC
+    auto operator()(T (&t)[N]) CB_CONST noexcept
+    {
+        return partial<from_container_fn, std::span<T>>{std::span<T>{t, N}};
+    }
+};
+
+constexpr inline from_container_fn from_container;
+
+
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
