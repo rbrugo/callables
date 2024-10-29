@@ -40,11 +40,32 @@ namespace callables
 {
 
 #define CB_FWD(x) static_cast<decltype(x) &&>(x)
+#define CB_FWD_LIKE(tp, x) detail::forward_like<decltype(tp)>(x)
 
 namespace detail
 {
 template <typename T>
 constexpr inline auto tuple_size = std::tuple_size_v<std::remove_cvref_t<T>>;
+
+// From https://en.cppreference.com/w/cpp/utility/forward_like
+template<class T, class U>
+constexpr auto forward_like(U&& x) noexcept -> auto &&
+{
+    constexpr bool is_adding_const = std::is_const_v<std::remove_reference_t<T>>;
+    if constexpr (std::is_lvalue_reference_v<T &&>) {
+        if constexpr (is_adding_const) {
+            return std::as_const(x);
+        } else {
+            return static_cast<U&>(x);
+        }
+    } else {
+        if constexpr (is_adding_const) {
+            return std::move(std::as_const(x));
+        } else {
+            return std::move(x);
+        }
+    }
+}
 }  // namespace detail
 
 template <typename Fn, typename T>
@@ -109,7 +130,7 @@ struct compare_tuple_fn
     auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
         return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
-            return (Base{}(get<I>(CB_FWD(p)), get<I + 1>(CB_FWD(p))) and ...);
+            return (Base{}(CB_FWD_LIKE(p, get<I>(p)), CB_FWD_LIKE(p, get<I + 1>(p))) and ...);
         }(std::make_index_sequence<detail::tuple_size<Tuple> - 1>{});
     }
 };
@@ -117,7 +138,12 @@ struct compare_tuple_fn
 template <typename Base>
 struct compare_operator : public binary_fn<Base>
 {
-    using binary_fn<Base>::operator();
+    // using binary_fn<Base>::operator();
+    using binary_fn<Base>::right;
+    template <typename T>
+    [[nodiscard]] constexpr CB_STATIC
+    auto operator()(T && t) CB_CONST noexcept(noexcept(right(CB_FWD(t))))
+    { return right(CB_FWD(t)); }
     [[no_unique_address]] compare_tuple_fn<Base> tuple;
 };
 
@@ -130,9 +156,9 @@ struct recursive_tuple_fn
     constexpr static
     auto _impl(Tuple && p) {
         if constexpr (I + 1 < detail::tuple_size<Tuple>) {
-            return base{}(get<I>(CB_FWD(p)), _impl<I + 1>(CB_FWD(p)));
+            return base{}(CB_FWD_LIKE(p, get<I>(p)), _impl<I + 1>(CB_FWD(p)));
         } else {
-            return get<I>(CB_FWD(p));
+            return CB_FWD_LIKE(p, get<I>(p));
         }
     }
 
@@ -153,6 +179,7 @@ struct arithmetic_operator : public binary_fn<Base>
     [[no_unique_address]] recursive_tuple_fn<Base> tuple;
 };
 
+#undef CB_FWD_LIKE
 #undef CB_FWD
 } // namespace callables
 
