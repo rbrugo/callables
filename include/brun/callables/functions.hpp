@@ -40,6 +40,7 @@
 
 #include <span>
 #include <utility>
+#include <optional>
 #include <functional>
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
@@ -441,8 +442,7 @@ struct value_or_fn
     template <class Opt, typename T>
     requires requires(Opt opt, T t) {
         { static_cast<bool>(opt) };
-        { *opt };
-        requires std::convertible_to<T, decltype(*opt)>;
+        { *opt } -> std::convertible_to<T>;
     }
     constexpr CB_STATIC
     auto operator()(Opt && opt, T && t) CB_CONST noexcept
@@ -454,6 +454,11 @@ struct value_or_fn
         return CB_FWD(t);
     }
 
+    template <typename Null, typename T>
+    requires std::same_as<Null, std::nullptr_t> or std::same_as<Null, std::nullopt_t>
+    constexpr CB_STATIC
+    auto operator()(Null &&, T && t) CB_CONST noexcept -> decltype(auto) { return CB_FWD(t); }
+
     template <typename T>
     constexpr CB_STATIC
     auto operator()(T && t) CB_CONST noexcept
@@ -463,6 +468,8 @@ struct value_or_fn
 };
 
 constexpr inline value_or_fn value_or;
+
+static_assert(value_or(nullptr, 10) == 10);
 
 #undef CB_FWD
 } // namespace callables
