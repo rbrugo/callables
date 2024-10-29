@@ -23,7 +23,7 @@ int main()
     });
 
     "bit_and_fn"_test = [&input] {
-        using brun::bit_and;
+        using callables::bit_and;
         should("immediately evaluable") = [&] {
             for (auto [a, b] : input) {
                 expect(bit_and(a, b) == _i(a & b));
@@ -52,7 +52,7 @@ int main()
     };
 
     "bit_or_fn"_test = [&input] {
-        using brun::bit_or;
+        using callables::bit_or;
         should("immediately evaluable") = [&] {
             for (auto [a, b] : input) {
                 expect(bit_or(a, b) == _i(a | b));
@@ -81,7 +81,7 @@ int main()
     };
 
     "bit_xor_fn"_test = [&input] {
-        using brun::bit_xor;
+        using callables::bit_xor;
         should("immediately evaluable") = [&] {
             for (auto [a, b] : input) {
                 expect(bit_xor(a, b) == _i(a ^ b));
@@ -110,7 +110,7 @@ int main()
     };
 
     "bit_not_fn"_test = [&input] {
-        using brun::bit_not;
+        using callables::bit_not;
         should("immediately evaluable") = [&] {
             for (auto [a, b] : input) {
                 expect(bit_not(a) == _i(~a));

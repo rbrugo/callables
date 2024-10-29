@@ -24,7 +24,7 @@ int main()
     using namespace boost::ut::operators::terse;
 
     "equal_to_fn"_test = [] {
-        using brun::equal_to;
+        using callables::equal_to;
         auto v = std::vector<int>{};
         should("immediately evaluable") = [=] {
             expect(equal_to(1, 1));
@@ -71,7 +71,7 @@ int main()
     };
 
     "not_equal_to_fn"_test = [] {
-        using brun::not_equal_to;
+        using callables::not_equal_to;
         auto v = std::vector<int>{1};
         should("immediately evaluable") = [=] {
             expect(not_equal_to(1, 2));

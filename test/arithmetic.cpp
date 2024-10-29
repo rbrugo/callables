@@ -21,7 +21,7 @@ int main()
     using namespace boost::ut;
     using namespace boost::ut::operators::terse;
     "plus_fn"_test = [] {
-        using brun::plus;
+        using callables::plus;
         should("immediately evaluable") = [] {
             expect(plus(1, 2) == 3_i);
             expect(plus(1., -1.) == 0._d);
@@ -59,7 +59,7 @@ int main()
     };
 
     "minus_fn"_test = [] {
-        using brun::minus;
+        using callables::minus;
         should("immediately evaluable") = [] {
             expect(minus(1, 2) == -1_i);
             expect(minus(1., -1.) == 2._d);
@@ -90,7 +90,7 @@ int main()
     };
 
     "multiplies_fn"_test = [] {
-        using brun::multiplies;
+        using callables::multiplies;
         should("immediately evaluable") = [] {
             expect(multiplies(1, 2) == 2_i);
             expect(multiplies(1., -1.) == -1._d);
@@ -118,7 +118,7 @@ int main()
     };
 
     "divides_fn"_test = [] {
-        using brun::divides;
+        using callables::divides;
         should("immediately evaluable") = [] {
             expect(divides(10, 2) == 5_i);
             expect(divides(20., -20.) == -1._d);
@@ -152,7 +152,7 @@ int main()
     };
 
     "negate_fn"_test = [] {
-        using brun::negate;
+        using callables::negate;
         should("immediately evaluable") = [] {
             expect(negate(10) == -10_i);
             expect(negate(20.) == -20._d);

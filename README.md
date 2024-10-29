@@ -47,9 +47,9 @@ auto store_all = take_stuff | svw::transform(cb::construct<store>);
 ***Equality and ordering:***
 - `equal_to`
 - `not_equal_to`
-- `less`
+- `less_than`
 - `less_equal`
-- `greater`
+- `greater_than`
 - `greater_equal`
 
 ***Arithmetic:***

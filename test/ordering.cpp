@@ -18,61 +18,61 @@ int main()
     using namespace boost::ut::operators::terse;
 
     "less_fn"_test = [] {
-        using brun::less;
+        using callables::less_than;
         should("immediately evaluable") = [=] {
-            expect(less(1, 2)) << "int";
-            expect(less(1., 2)) << "double < int";
-            expect(less("a"s, "aa")) << "string < char const *";
+            expect(less_than(1, 2)) << "int";
+            expect(less_than(1., 2)) << "double < int";
+            expect(less_than("a"s, "aa")) << "string < char const *";
 
-            expect(not less(1, 1)) << "int";
-            expect(not less(1., 1)) << "double < int";
-            expect(not less("x"s, "x")) << "string < char const *";
+            expect(not less_than(1, 1)) << "int";
+            expect(not less_than(1., 1)) << "double < int";
+            expect(not less_than("x"s, "x")) << "string < char const *";
         };
         should("partial-applicable") = [=] {
-            expect(less(1)(2)) << "int";
-            expect(less(1.)(2.)) << "double";
-            expect(less("a"s)("aa"s)) << "string";
+            expect(less_than(2)(1)) << "int";
+            expect(less_than(2.)(1.)) << "double";
+            expect(less_than("aa"s)("a"s)) << "string";
 
-            expect(not less(1)(1)) << "int";
-            expect(not less(1)(1)) << "double < int";
-            expect(not less("x"s)("x")) << "string < char const *";
+            expect(not less_than(1)(1)) << "int";
+            expect(not less_than(1)(1)) << "double < int";
+            expect(not less_than("x"s)("x")) << "string < char const *";
         };
         should("left-bindable") = [=] {
-            expect(less.left(1)(2)) << "int";
-            expect(less.left(1.)(2.)) << "double";
-            expect(less.left("a"s)("aa"s)) << "string";
+            expect(less_than.left(1)(2)) << "int";
+            expect(less_than.left(1.)(2.)) << "double";
+            expect(less_than.left("a"s)("aa"s)) << "string";
 
-            expect(not less.left(1)(1)) << "int";
-            expect(not less.left(1)(1)) << "double < int";
-            expect(not less.left("x"s)("x")) << "string < char const *";
+            expect(not less_than.left(1)(1)) << "int";
+            expect(not less_than.left(1)(1)) << "double < int";
+            expect(not less_than.left("x"s)("x")) << "string < char const *";
         };
         should("right-bindable") = [=] {
-            expect(less.right(2)(1)) << "int";
-            expect(less.right(2.)(1.)) << "double";
-            expect(less.right("ab"s)("aa"s)) << "string";
+            expect(less_than.right(2)(1)) << "int";
+            expect(less_than.right(2.)(1.)) << "double";
+            expect(less_than.right("ab"s)("aa"s)) << "string";
 
-            expect(not less.right(1)(1)) << "int";
-            expect(not less.right(1)(1)) << "double < int";
-            expect(not less.right("x"s)("x")) << "string < char const *";
+            expect(not less_than.right(1)(1)) << "int";
+            expect(not less_than.right(1)(1)) << "double < int";
+            expect(not less_than.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(less.tuple(std::pair{1, 2})) << "int";
-            expect(less.tuple(std::pair{1., 2.})) << "double";
-            expect(less.tuple(std::pair{"a"s, "aa"})) << "string";
+            expect(less_than.tuple(std::pair{1, 2})) << "int";
+            expect(less_than.tuple(std::pair{1., 2.})) << "double";
+            expect(less_than.tuple(std::pair{"a"s, "aa"})) << "string";
 
-            expect(not less.tuple(std::pair{1, 1})) << "int";
-            expect(not less.tuple(std::pair{1, 1})) << "double < int";
-            expect(not less.tuple(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(not less_than.tuple(std::pair{1, 1})) << "int";
+            expect(not less_than.tuple(std::pair{1, 1})) << "double < int";
+            expect(not less_than.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(less.tuple(std::tuple{1, 2})) << "int";
-            expect(less.tuple(std::tuple{1., 2.})) << "double";
-            expect(less.tuple(std::tuple{"a"s, "aa"})) << "string";
+            expect(less_than.tuple(std::tuple{1, 2})) << "int";
+            expect(less_than.tuple(std::tuple{1., 2.})) << "double";
+            expect(less_than.tuple(std::tuple{"a"s, "aa"})) << "string";
         };
     };
 
     "less_equal_fn"_test = [] {
-        using brun::less_equal;
+        using callables::less_equal;
         should("immediately evaluable") = [=] {
             expect(less_equal(1, 2)) << "int";
             expect(less_equal(1., 2)) << "double < int";
@@ -83,9 +83,9 @@ int main()
             expect(less_equal("x"s, "x")) << "string < char const *";
         };
         should("partial-applicable") = [=] {
-            expect(less_equal(1)(2)) << "int";
-            expect(less_equal(1.)(2.)) << "double";
-            expect(less_equal("a"s)("aa"s)) << "string";
+            expect(less_equal(2)(1)) << "int";
+            expect(less_equal(2.)(1.)) << "double";
+            expect(less_equal("aa"s)("a"s)) << "string";
 
             expect(less_equal(1)(1)) << "int";
             expect(less_equal(1)(1)) << "double < int";
@@ -127,61 +127,61 @@ int main()
 
 
     "greater_fn"_test = [] {
-        using brun::greater;
+        using callables::greater_than;
         should("immediately evaluable") = [=] {
-            expect(greater(3, 2)) << "int";
-            expect(greater(3., 2)) << "double < int";
-            expect(greater("aaa"s, "aa")) << "string < char const *";
+            expect(greater_than(3, 2)) << "int";
+            expect(greater_than(3., 2)) << "double < int";
+            expect(greater_than("aaa"s, "aa")) << "string < char const *";
 
-            expect(not greater(1, 1)) << "int";
-            expect(not greater(1., 1)) << "double < int";
-            expect(not greater("x"s, "x")) << "string < char const *";
+            expect(not greater_than(1, 1)) << "int";
+            expect(not greater_than(1., 1)) << "double < int";
+            expect(not greater_than("x"s, "x")) << "string < char const *";
         };
         should("partial-applicable") = [=] {
-            expect(greater(3)(2)) << "int";
-            expect(greater(3.)(2.)) << "double";
-            expect(greater("aaa"s)("aa"s)) << "string";
+            expect(greater_than(2)(3)) << "int";
+            expect(greater_than(2.)(3.)) << "double";
+            expect(greater_than("aa"s)("aaa"s)) << "string";
 
-            expect(not greater(1)(1)) << "int";
-            expect(not greater(1)(1)) << "double < int";
-            expect(not greater("x"s)("x")) << "string < char const *";
+            expect(not greater_than(1)(1)) << "int";
+            expect(not greater_than(1)(1)) << "double < int";
+            expect(not greater_than("x"s)("x")) << "string < char const *";
         };
         should("left-bindable") = [=] {
-            expect(greater.left(3)(2)) << "int";
-            expect(greater.left(3.)(2.)) << "double";
-            expect(greater.left("aaa"s)("aa"s)) << "string";
+            expect(greater_than.left(3)(2)) << "int";
+            expect(greater_than.left(3.)(2.)) << "double";
+            expect(greater_than.left("aaa"s)("aa"s)) << "string";
 
-            expect(not greater.left(1)(1)) << "int";
-            expect(not greater.left(1)(1)) << "double < int";
-            expect(not greater.left("x"s)("x")) << "string < char const *";
+            expect(not greater_than.left(1)(1)) << "int";
+            expect(not greater_than.left(1)(1)) << "double < int";
+            expect(not greater_than.left("x"s)("x")) << "string < char const *";
         };
         should("right-bindable") = [=] {
-            expect(greater.right(2)(3)) << "int";
-            expect(greater.right(2.)(3.)) << "double";
-            expect(greater.right("ab"s)("aba"s)) << "string";
+            expect(greater_than.right(2)(3)) << "int";
+            expect(greater_than.right(2.)(3.)) << "double";
+            expect(greater_than.right("ab"s)("aba"s)) << "string";
 
-            expect(not greater.right(1)(1)) << "int";
-            expect(not greater.right(1)(1)) << "double < int";
-            expect(not greater.right("x"s)("x")) << "string < char const *";
+            expect(not greater_than.right(1)(1)) << "int";
+            expect(not greater_than.right(1)(1)) << "double < int";
+            expect(not greater_than.right("x"s)("x")) << "string < char const *";
         };
         should("be callable with a pair argument") = [=] {
-            expect(greater.tuple(std::pair{3, 2})) << "int";
-            expect(greater.tuple(std::pair{3., 2.})) << "double";
-            expect(greater.tuple(std::pair{"aaa"s, "aa"})) << "string";
+            expect(greater_than.tuple(std::pair{3, 2})) << "int";
+            expect(greater_than.tuple(std::pair{3., 2.})) << "double";
+            expect(greater_than.tuple(std::pair{"aaa"s, "aa"})) << "string";
 
-            expect(not greater.tuple(std::pair{1, 1})) << "int";
-            expect(not greater.tuple(std::pair{1, 1})) << "double < int";
-            expect(not greater.tuple(std::pair{"x"s, "x"})) << "string < char const *";
+            expect(not greater_than.tuple(std::pair{1, 1})) << "int";
+            expect(not greater_than.tuple(std::pair{1, 1})) << "double < int";
+            expect(not greater_than.tuple(std::pair{"x"s, "x"})) << "string < char const *";
         };
         should("callable with a binary tuple argument") = [=] {
-            expect(greater.tuple(std::tuple{3, 2, 1.0})) << "int";
-            expect(greater.tuple(std::tuple{3., 2., 1})) << "double";
-            expect(greater.tuple(std::tuple{"aaa"s, "aa", "a"sv})) << "string";
+            expect(greater_than.tuple(std::tuple{3, 2, 1.0})) << "int";
+            expect(greater_than.tuple(std::tuple{3., 2., 1})) << "double";
+            expect(greater_than.tuple(std::tuple{"aaa"s, "aa", "a"sv})) << "string";
         };
     };
 
     "greater_equal_fn"_test = [] {
-        using brun::greater_equal;
+        using callables::greater_equal;
         should("immediately evaluable") = [=] {
             expect(greater_equal(3, 2)) << "int";
             expect(greater_equal(3., 2)) << "double < int";
@@ -192,9 +192,9 @@ int main()
             expect(greater_equal("x"s, "x")) << "string < char const *";
         };
         should("partial-applicable") = [=] {
-            expect(greater_equal(3)(2)) << "int";
-            expect(greater_equal(3.)(2.)) << "double";
-            expect(greater_equal("aaa"s)("aa"s)) << "string";
+            expect(greater_equal(2)(3)) << "int";
+            expect(greater_equal(2.)(3.)) << "double";
+            expect(greater_equal("aa"s)("aaa"s)) << "string";
 
             expect(greater_equal(1)(1)) << "int";
             expect(greater_equal(1)(1)) << "double < int";

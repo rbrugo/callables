@@ -46,7 +46,7 @@ int main()
     using namespace boost::ut::operators::terse;
 
     "apply_fn"_test = [] {
-        using brun::apply;
+        using callables::apply;
         auto [sum, sum_expr] = DECLARE(([](int a, int b) { return a + b;}));
         auto [prod, prod_expr] = DECLARE(([](auto ...n) { return (n * ...); }));
 
@@ -64,7 +64,7 @@ int main()
     };
 
     "compose_fn"_test = [] {
-        using brun::compose;
+        using callables::compose;
         auto [twice, twice_expr] = DECLARE(([](auto n) { return 2 * n; }));
         auto [square, square_expr] = DECLARE(([](auto n) { return n * n; }));
         auto [sum, sum_expr] = DECLARE(([](int a, int b) { return a + b;}));
@@ -80,7 +80,7 @@ int main()
     };
 
     "identity_fn"_test = [] {
-        using brun::identity;
+        using callables::identity;
         should("return its argument unchanged") = [] {
             expect(identity(1) == 1_i);
             expect(identity(std::string("hi")) == "hi"_b);
@@ -88,7 +88,7 @@ int main()
     };
 
     "construct_fn"_test = [] {
-        using brun::construct;
+        using callables::construct;
         struct empty {
             empty() {}
             bool operator==(empty const &) const = default;
@@ -134,22 +134,22 @@ int main()
             auto example = std::tuple{1, 2., std::string_view{"three"}};
             auto external_get = test::external_get{{1, 2, 3}};
             auto member_get = test::external_get{{1, 2, 3}};
-            expect(brun::get<0>(example) == 1_i);
-            expect(brun::get<1>(example) == 2._d);
-            expect(brun::get<2>(example) == std::string_view{"three"});
-            expect(brun::get<0>(external_get) == 1_i);
-            expect(brun::get<1>(external_get) == 2_i);
-            expect(brun::get<2>(external_get) == 3_i);
-            expect(brun::get<0>(member_get) == 1_i);
-            expect(brun::get<1>(member_get) == 2_i);
-            expect(brun::get<2>(member_get) == 3_i);
+            expect(callables::get<0>(example) == 1_i);
+            expect(callables::get<1>(example) == 2._d);
+            expect(callables::get<2>(example) == std::string_view{"three"});
+            expect(callables::get<0>(external_get) == 1_i);
+            expect(callables::get<1>(external_get) == 2_i);
+            expect(callables::get<2>(external_get) == 3_i);
+            expect(callables::get<0>(member_get) == 1_i);
+            expect(callables::get<1>(member_get) == 2_i);
+            expect(callables::get<2>(member_get) == 3_i);
         };
 
         should("eventually return a reference") = [] {
             auto tup = std::tuple{1, 2, 3};
-            brun::get<0>(tup) = 2;
-            brun::get<1>(tup) = 4;
-            brun::get<2>(tup) = 6;
+            callables::get<0>(tup) = 2;
+            callables::get<1>(tup) = 4;
+            callables::get<2>(tup) = 6;
             expect(tup == std::tuple{2, 4, 6});
         };
     };
@@ -157,21 +157,21 @@ int main()
     "at_fn"_test = [] {
         auto ct = std::vector{1, 2, 3};
         should("get the N-th value using `at`") = [&ct] {
-            expect(brun::at(0)(ct) == 1_i);
-            expect(brun::at(1)(ct) == 2_i);
-            expect(brun::at(2)(ct) == 3_i);
-            expect(throws([&]{ brun::at(3)(ct); })) << "index 3 is out of range";
+            expect(callables::at(0)(ct) == 1_i);
+            expect(callables::at(1)(ct) == 2_i);
+            expect(callables::at(2)(ct) == 3_i);
+            expect(throws([&]{ callables::at(3)(ct); })) << "index 3 is out of range";
         };
         should("get the N-th value using `[]`") = [&ct] {
-            expect(brun::at[0](ct) == 1_i);
-            expect(brun::at[1](ct) == 2_i);
-            expect(brun::at[2](ct) == 3_i);
+            expect(callables::at[0](ct) == 1_i);
+            expect(callables::at[1](ct) == 2_i);
+            expect(callables::at[2](ct) == 3_i);
         };
         should("forward-return the correct type") = [] {
             auto v = std::vector{0, 1, 2, 3};
             for (auto i = 0u; i < v.size(); ++i) {
-                brun::at(v, i) = i * i;
-                expect(brun::at[i](v) == _i(i * i));
+                callables::at(v, i) = i * i;
+                expect(callables::at[i](v) == _i(i * i));
             }
         };
     };
