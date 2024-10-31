@@ -57,6 +57,8 @@ namespace callables
 // at
 // value_or
 // from_container
+// addressof
+// dereference
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -178,6 +180,34 @@ struct identity_fn
 };
 
 constexpr inline identity_fn identity;
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// .................................ADDRESSOF.................................. //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct addressof_fn {
+    constexpr CB_STATIC
+    auto operator()(auto & obj) CB_CONST noexcept -> auto * { return std::addressof(obj); }
+    constexpr CB_STATIC
+    auto operator()(auto const & obj) CB_CONST noexcept -> auto const * { return std::addressof(obj); }
+};
+
+constexpr inline addressof_fn addressof;
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ................................DEREFERENCE................................. //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct dereference_fn {
+    template <typename T>
+        requires requires(T && t) { *std::forward<T>(t); }
+    constexpr CB_STATIC
+    auto operator()(T && obj) CB_CONST noexcept -> decltype(auto)
+    { return *std::forward<T>(obj); }
+};
+
+constexpr inline dereference_fn dereference;
+
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .................................CONSTRUCT.................................. //

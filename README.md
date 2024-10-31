@@ -38,6 +38,8 @@ auto store_all = take_stuff | svw::transform(cb::construct<store>);
 - `apply`
 - `compose`
 - `identity`
+- `addressof`
+- `dereference`
 - `construct<T>`, `construct<T>.from_tuple`
 - `get<N>`
 - `at(N)`, `at[N]`
