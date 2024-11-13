@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : config
  * @created     : Tuesday Aug 22, 2023 23:59:29 CEST
  * @license     :
  * Boost Software License - Version 1.0 - August 17th, 2003

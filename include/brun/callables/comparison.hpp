@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : comparison
  * @created     : Wednesday Dec 15, 2021 17:54:27 CET
  * @description : implementations of partially-applicable comparison functions
  * @license     :

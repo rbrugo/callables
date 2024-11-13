@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : partial
  * @created     : Tuesday Sep 19, 2023 16:01:09 CEST
  * @description : implementation details regarding partial application
  * @license     :

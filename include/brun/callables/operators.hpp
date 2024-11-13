@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : operators
  * @created     : Monday Dec 13, 2021 13:24:01 CET
  * @description : exports arithmetic, bit manipulation and ordering partially-applicable functions
  * @license     :

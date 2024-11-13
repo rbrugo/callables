@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : ordering
  * @created     : Monday Dec 13, 2021 13:19:39 CET
  * @description : implementations of partially-applicable arithmetic functions
  * @license     :

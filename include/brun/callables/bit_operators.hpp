@@ -1,6 +1,5 @@
 /**
  * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @file        : bit_operators
  * @created     : Friday Dec 23, 2022 21:12:51 CET
  * @description : implementations of partially-applicable bit manipulation functions
  * @license     :
