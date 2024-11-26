@@ -45,6 +45,7 @@ auto store_all = take_stuff | svw::transform(cb::construct<store>);
 - `at(N)`, `at[N]`
 - `value_or`
 - `from_container(cont)`
+- `transform_at<N>`: applies the captured function to the nth element of the tuple
 
 ***Equality and ordering:***
 - `equal_to`

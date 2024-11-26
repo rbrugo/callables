@@ -38,6 +38,7 @@
 #endif
 
 #include <span>
+#include <cstdint>
 #include <utility>
 #include <optional>
 #include <functional>
@@ -499,6 +500,49 @@ struct value_or_fn
 constexpr inline value_or_fn value_or;
 
 static_assert(value_or(nullptr, 10) == 10);
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ................................TRANSFORM_AT................................ //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+template <std::int64_t N>
+struct transform_at_fn
+{
+
+    template <typename Fn>
+    struct capture
+    {
+        Fn _fn;
+
+        template <typename Tuple>
+            requires std::invocable<Fn, std::tuple_element_t<N, Tuple>>
+        constexpr auto operator()(Tuple && tuple) -> decltype(auto)
+        {
+            return [tp=std::forward<Tuple>(tuple),this]<std::size_t ...I>(std::index_sequence<I...>) mutable {
+                auto impl = [&tp,this]<std::size_t Idx>(std::integral_constant<size_t, Idx>) mutable -> decltype(auto) {
+                    if constexpr (Idx == N) {
+                        return std::forward<Fn>(_fn)(std::forward_like<Tuple>(std::get<N>(tp)));
+                    } else {
+                        return std::forward_like<Tuple>(std::get<Idx>(tp));
+                    }
+                };
+                return std::tuple{impl(std::integral_constant<size_t, I>{})...};
+            }(std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>());
+        }
+    };
+
+    template <typename Fn>
+    constexpr CB_STATIC auto operator()(Fn && fn) CB_CONST noexcept
+    {
+        return capture<Fn>(std::forward<Fn>(fn));
+    }
+};
+
+template <std::int64_t N>
+constexpr inline auto transform_at = transform_at_fn<N>{};
+
+static_assert(transform_at<1>([](auto x) { return x * 2; })(std::tuple{0, 10}) == std::tuple{0, 20});
+static_assert(transform_at<0>([](auto x) { return 'a'; })(std::tuple{0, 10}) == std::tuple{'a', 10});
 
 #undef CB_FWD
 } // namespace callables
