@@ -55,10 +55,11 @@ namespace callables
 // construct
 // get
 // at
-// value_or
 // from_container
 // addressof
 // dereference
+// value_or
+// transform_at
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -512,21 +513,36 @@ struct transform_at_fn
     template <typename Fn>
     struct capture
     {
-        Fn _fn;
+        [[no_unique_address]] Fn _fn;
+
+        template <typename T, std::int64_t I>
+        constexpr auto _maybe_apply(T && t) -> decltype(auto)
+        {
+            if constexpr (I == N) {
+                return std::forward<Fn>(_fn)(std::forward<T>(t));
+            } else {
+                return std::forward<T>(t);
+            }
+        }
+
+        template <typename T> static constexpr auto ref(T & t) { return std::ref(t); }
+        template <typename T> static constexpr auto ref(T const & t) { return std::cref(t); }
+        template <typename T> static constexpr auto ref(T && t) { return t; }
+        template <typename T> static constexpr auto ref(T const && t) { return t; }
+
+        template <typename T, std::int64_t I>
+        constexpr auto apply(T && t) -> decltype(auto)
+        { return ref(_maybe_apply<T, I>(std::forward<T>(t))); }
+
 
         template <typename Tuple>
             requires std::invocable<Fn, std::tuple_element_t<N, Tuple>>
         constexpr auto operator()(Tuple && tuple) -> decltype(auto)
         {
             return [tp=std::forward<Tuple>(tuple),this]<std::size_t ...I>(std::index_sequence<I...>) mutable {
-                auto impl = [&tp,this]<std::size_t Idx>(std::integral_constant<size_t, Idx>) mutable -> decltype(auto) {
-                    if constexpr (Idx == N) {
-                        return std::forward<Fn>(_fn)(std::forward_like<Tuple>(std::get<N>(tp)));
-                    } else {
-                        return std::forward_like<Tuple>(std::get<Idx>(tp));
-                    }
-                };
-                return std::tuple{impl(std::integral_constant<size_t, I>{})...};
+                return std::make_tuple(
+                    this->apply<std::tuple_element_t<I, Tuple>, I>(std::forward_like<Tuple>(std::get<I>(tp)))...
+                );
             }(std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>());
         }
     };
@@ -542,7 +558,7 @@ template <std::int64_t N>
 constexpr inline auto transform_at = transform_at_fn<N>{};
 
 static_assert(transform_at<1>([](auto x) { return x * 2; })(std::tuple{0, 10}) == std::tuple{0, 20});
-static_assert(transform_at<0>([](auto x) { return 'a'; })(std::tuple{0, 10}) == std::tuple{'a', 10});
+static_assert(transform_at<0>([](auto  ) { return 'a'; })(std::tuple{0, 10}) == std::tuple{'a', 10});
 
 #undef CB_FWD
 } // namespace callables
