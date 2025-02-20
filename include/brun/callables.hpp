@@ -10,6 +10,7 @@
 #include "callables/operators.hpp"
 #include "callables/comparison.hpp"
 #include "callables/functions.hpp"
+#include "callables/format.hpp"
 
 #endif /* CALLABLES_HPP */
 
