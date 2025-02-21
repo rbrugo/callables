@@ -25,6 +25,7 @@ auto heavy = boxes | svw::filter(boxes, cb::greater_equal(10), &box::weight);
 auto my_boxes = heavy | svw::filter(heavy, cb::equals("Joe"), &box::label);
 auto take_stuff = my_boxes | svw::transform(cb::minus(10), &box::weight);
 auto store_all = take_stuff | svw::transform(cb::construct<store>);
+auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
 ```
 
 ## Function objects
@@ -65,6 +66,9 @@ auto store_all = take_stuff | svw::transform(cb::construct<store>);
 ***Formatting***
 - `to_string`
 - `format<fmt>`, templated with a format string
+
+***Range actions***
+- `fold`
 
 
 All bit, arithmetic, equality and ordering operators have a member `.tuple` that accepts a tuple
