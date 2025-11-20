@@ -5,9 +5,9 @@
  * @description : 
  * */
 
-#include <string>
 #include <filesystem>
 #include <brun/callables/arithmetic.hpp>
+#include <brun/callables/math.hpp>
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
 
@@ -15,6 +15,14 @@ using namespace std::literals;
 
 auto operator""_p(char const * str, std::size_t)
 { return std::filesystem::path(str); }
+
+namespace foo
+{
+
+struct vec2d { int x; int y; };
+auto abs(vec2d w) -> int { return std::sqrt(w.x * w.x + w.y * w.y); }
+
+}  // namespace foo
 
 int main()
 {
@@ -157,6 +165,16 @@ int main()
             expect(negate(10) == -10_i);
             expect(negate(20.) == -20._d);
             expect(negate(uint8_t{1}) == -1_u8);
+        };
+    };
+
+    "abs_fn"_test = [] {
+        using callables::abs;
+        should("immediately evaluable") = [] {
+            expect(abs(0) == 0_i);
+            expect(abs(100.1) == 100.1_d);
+            expect(abs(-125) == 125_i);
+            expect(abs(foo::vec2d{3, -4}) == 5_i);
         };
     };
 };

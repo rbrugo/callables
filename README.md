@@ -63,6 +63,9 @@ auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
 - `divides`
 - `negate`
 
+***Math:***
+- `abs`
+
 ***Formatting***
 - `to_string`
 - `format<fmt>`, templated with a format string
