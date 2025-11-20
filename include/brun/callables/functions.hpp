@@ -32,9 +32,9 @@
 #define CB_FUNCTIONS_HPP
 
 #if defined(__cpp_multidimensional_subscript) && __cpp_multidimensional_subscript >= 202110L
-#define HAS_MD_SUBSCRIPT 1
+#define CB_HAS_MD_SUBSCRIPT 1
 #else
-#define HAS_MD_SUBSCRIPT 0
+#define CB_HAS_MD_SUBSCRIPT 0
 #endif
 
 #include <span>
@@ -45,12 +45,17 @@
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
 
+#if defined CB_TESTING_ON
+#include <string_view>
+#endif
+
 namespace callables
 {
 #define CB_FWD(x) std::forward<decltype(x)>(x)
 
 // apply
 // compose
+// on
 // identity
 // construct
 // get
@@ -161,11 +166,95 @@ struct compose_fn
 
 constexpr inline compose_fn compose;
 
-#if 0
+#if defined CB_TESTING_COMPOSE
 static_assert(compose([](auto x) { return x + 1; }, [](auto a, auto b) { return a + b; })(0, 2) == 3);
 static_assert(compose([](auto c) { return c - 'z'; }, [](auto c) { return c + 'z'; })('c') == 'c');
 static_assert(compose(+[](int a, int b) { return a + b; }, +[](int x) { return x; })(0, 0) == 0);
 #endif
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// .....................................ON..................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct on_fn
+{
+    template <typename UnaryFn, typename BinaryFn>
+    struct inner : public binary_fn<inner<UnaryFn, BinaryFn>>, applicable_on_tuples<inner<UnaryFn, BinaryFn>>
+    {
+        [[no_unique_address]] UnaryFn _un;
+        [[no_unique_address]] BinaryFn _bin;
+
+        template <typename T, typename U>
+            requires requires(T && t, U && u) {
+                { _un(t) };
+                { _un(u) };
+                { _bin(_un(t), _un(u)) };
+            }
+        [[nodiscard]] constexpr auto operator()(T && t, U && u) const -> decltype(auto)
+        {
+            return _bin(_un(CB_FWD(t)), _un(CB_FWD(u)));
+        }
+
+        using inner::binary_fn::operator();
+    };
+
+    template <typename UnaryFn>
+    struct outer
+    {
+        [[no_unique_address]] UnaryFn _un;
+
+        template <typename BinaryFn>
+        [[nodiscard]] constexpr auto operator()(BinaryFn && binary) const & -> decltype(auto)
+        {
+            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{{}, _un, CB_FWD(binary)};
+        }
+
+        template <typename BinaryFn>
+        [[nodiscard]] constexpr auto operator()(BinaryFn && binary) && -> decltype(auto)
+        {
+            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{
+                {}, {}, std::move(_un), CB_FWD(binary)
+            };
+        }
+    };
+
+    template <typename UnaryFn>
+    [[nodiscard]] constexpr static auto operator()(UnaryFn && fn) noexcept
+    { return outer<std::remove_cvref_t<UnaryFn>>{CB_FWD(fn)}; }
+
+    template <typename UnaryFn, typename BinaryFn>
+    [[nodiscard]] constexpr static auto operator()(UnaryFn && unary, BinaryFn && binary) noexcept
+    {
+        return inner<std::remove_cvref_t<UnaryFn>, std::remove_cvref_t<BinaryFn>>{
+            {}, {}, CB_FWD(unary), CB_FWD(binary)
+        };
+    }
+};
+
+constexpr inline on_fn on;
+
+#if defined CB_TESTING_ON
+namespace _test
+{
+constexpr inline auto mod = [](auto const & x) static { return x % 2; };
+constexpr inline auto eq = [](auto const & a, auto const & b) static { return a == b; };
+constexpr inline auto ne = [](auto const & a, auto const & b) static { return a != b; };
+constexpr inline auto len = [](auto const & x) static { return size(x); };
+constexpr inline auto gt = [](auto const & a, auto const & b) static { return a > b; };
+constexpr inline auto lt = [](auto const & a, auto const & b) static { return a < b; };
+
+using std::string_view_literals::operator""sv;
+
+static_assert(on(mod, eq)(0, 2));
+static_assert(on(mod, ne)(0, 3));
+static_assert(on(mod, eq)(0)(2));
+static_assert(on(len)(eq)("ciao"sv)("hola"sv));
+static_assert(on(len)(eq)("ciao"sv)("hola"sv));
+static_assert(on(len)(lt).left("ciao"sv)("hello"sv));
+static_assert(on(len)(gt).right("ciao"sv)("hello"sv));
+}  // namespace _test
+#endif
+
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................IDENTITY.................................. //
@@ -182,6 +271,9 @@ struct identity_fn
 
 constexpr inline identity_fn identity;
 
+#if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
+static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
+#endif
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .................................ADDRESSOF.................................. //
@@ -303,7 +395,7 @@ struct at_fn
         }
     };
 
-#if HAS_MD_SUBSCRIPT
+#if CB_HAS_MD_SUBSCRIPT
     template <typename ...N>
     struct use_op
     {
@@ -350,7 +442,7 @@ struct at_fn
         -> decltype(auto)
     { return CB_FWD(obj).at(CB_FWD(n)...); }
 
-#if HAS_MD_SUBSCRIPT
+#if CB_HAS_MD_SUBSCRIPT
     template <typename ...N>
         requires (sizeof...(N) > 0)
     constexpr CB_STATIC
@@ -557,8 +649,10 @@ struct transform_at_fn
 template <std::int64_t N>
 constexpr inline auto transform_at = transform_at_fn<N>{};
 
+#if defined CB_TESTING_TRANSFORM_AT
 static_assert(transform_at<1>([](auto x) { return x * 2; })(std::tuple{0, 10}) == std::tuple{0, 20});
 static_assert(transform_at<0>([](auto  ) { return 'a'; })(std::tuple{0, 10}) == std::tuple{'a', 10});
+#endif
 
 #undef CB_FWD
 } // namespace callables

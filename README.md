@@ -11,6 +11,8 @@ struct box
 {
     std::string label;
     float weight;
+    std::array<int, 3> size;
+    std::array<float, 2> coordinates;
 };
 
 struct store
@@ -21,11 +23,16 @@ struct store
 auto boxes = std::vector<box>{...};
 std::ranges::sort(boxes, cb::less_equal);
 
-auto heavy = boxes | svw::filter(boxes, cb::greater_equal(10), &box::weight);
+auto volume(box const & b) { ... };
+
+auto heavy = boxes | svw::filter(cb::greater_equal(10), &box::weight);
 auto my_boxes = heavy | svw::filter(heavy, cb::equals("Joe"), &box::label);
 auto take_stuff = my_boxes | svw::transform(cb::minus(10), &box::weight);
 auto store_all = take_stuff | svw::transform(cb::construct<store>);
 auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
+auto biggest = std::ranges::max(boxes, cb::on(volume, cb::less_equal));
+auto manhattan_distance = cb::on(cb::abs, cb::plus).tuple;
+auto nearest = std::ranges::min(boxes, manhattan_distance);
 ```
 
 ## Function objects
@@ -38,6 +45,7 @@ auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
 ***Functional:***
 - `apply`
 - `compose`
+- `on`: applies a binary function over a unary function
 - `identity`
 - `addressof`
 - `dereference`
