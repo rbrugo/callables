@@ -71,6 +71,8 @@ auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
 - `fold`
 
 
-All bit, arithmetic, equality and ordering operators have a member `.tuple` that accepts a tuple
-and computes the operation on its members. For example:
+All bit, arithmetic, equality and ordering operators have a member `.tuple` that accepts a tuple-like
+object and computes the operation on its members. For example:
 `static_assert(plus.tuple(std::pair{2, 3}) == 5)`
+
+TODO: switch to C++23, replace all CRTPs with `deducing this`

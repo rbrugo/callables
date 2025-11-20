@@ -149,32 +149,21 @@ struct compare_operator : public binary_fn<Base>
 template <typename Base>
 struct recursive_tuple_fn
 {
-    using base = Base;
-
-    template <std::size_t I, typename Tuple>
-    constexpr static
-    auto _impl(Tuple && p) {
-        if constexpr (I + 1 < detail::tuple_size<Tuple>) {
-            return base{}(CB_FWD_LIKE(p, get<I>(p)), _impl<I + 1>(CB_FWD(p)));
-        } else {
-            return CB_FWD_LIKE(p, get<I>(p));
-        }
-    }
-
     template <typename Tuple>
         requires (detail::tuple_size<Tuple> > 0)
     [[nodiscard]]
     constexpr CB_STATIC
     auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
-        return _impl<0>(CB_FWD(p));
+        return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
+            return (Base{}(CB_FWD_LIKE(p, get<I>(p))...));
+        }(std::make_index_sequence<detail::tuple_size<Tuple>>{});
     }
 };
 
 template <typename Base>
-struct arithmetic_operator : public binary_fn<Base>
+struct applicable_on_tuples
 {
-    using binary_fn<Base>::operator();
     [[no_unique_address]] recursive_tuple_fn<Base> tuple;
 };
 
