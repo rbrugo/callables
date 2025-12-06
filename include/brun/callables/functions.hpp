@@ -39,9 +39,9 @@
 
 #include <span>
 #include <cstdint>
-#include <utility>
-#include <optional>
 #include <functional>
+#include "identity.hpp"  // IWYU pragma: export
+#include "nullable.hpp"
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
 
@@ -51,20 +51,19 @@
 
 namespace callables
 {
-#define CB_FWD(x) std::forward<decltype(x)>(x)
+#define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 // apply
 // compose
 // on
-// identity
 // construct
-// get
-// at
-// from_container
+// get  :  access
+// at  :  access
+// from_container  :  access
 // addressof
 // dereference
 // value_or
-// transform_at
+// transform_at  :  access
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -108,18 +107,18 @@ struct compose_fn
         template <typename ...Args>
         constexpr
         static auto call_with_args(std::tuple<Fns...> & tp, Args &&... args) -> decltype(auto)
-        { return _call_impl<0>(tp, std::forward<Args>(args)...); }
+        { return _call_impl<0>(tp, CB_FWD(args)...); }
 
         template <typename ...Args>
         constexpr
         static auto call_with_args(std::tuple<Fns...> const & tp, Args &&... args) -> decltype(auto)
-        { return _call_impl<0>(tp, std::forward<Args>(args)...); }
+        { return _call_impl<0>(tp, CB_FWD(args)...); }
 
         template <std::size_t I, typename Tuple, typename ...Args>
         constexpr
         static auto _call_impl(Tuple && fns, Args &&... args) -> decltype(auto)
         {
-#           define GET(idx, tpl) std::get<idx>(std::forward<Tuple>(tpl))
+#           define GET(idx, tpl) std::get<idx>(CB_FWD(tpl))
             if constexpr (I == sizeof...(Fns) - 1) {
                 if constexpr (std::invocable<std::tuple_element_t<I, std::remove_cvref_t<Tuple>>, Args...>) {
                     return GET(I, fns)(CB_FWD(args)...);
@@ -145,22 +144,22 @@ struct compose_fn
         template <typename ...Fns2>
             requires detail::pairwise_constructible<Fns...>::template from<Fns2...>
         constexpr
-        compose_fn_capture(Fns2 &&... fns) : _fns{std::forward<Fns2>(fns)...} {}
+        compose_fn_capture(Fns2 &&... fns) : _fns{CB_FWD(fns)...} {}
 
         template <typename ...Args>
         constexpr auto operator()(Args &&... args) const -> decltype(auto)
-        { return call_with_args(_fns, std::forward<Args>(args)...); }
+        { return call_with_args(_fns, CB_FWD(args)...); }
 
         template <typename ...Args>
         constexpr auto operator()(Args &&... args) -> decltype(auto)
-        { return call_with_args(_fns, std::forward<Args>(args)...); }
+        { return call_with_args(_fns, CB_FWD(args)...); }
     };
 
     template <typename ...Fns>
     constexpr CB_STATIC
     auto operator()(Fns &&... fns) CB_CONST noexcept
     {
-        return compose_fn_capture<Fns...>{std::forward<Fns>(fns)...};
+        return compose_fn_capture<Fns...>{CB_FWD(fns)...};
     }
 };
 
@@ -257,25 +256,6 @@ static_assert(on(len)(gt).right("ciao"sv)("hello"sv));
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ..................................IDENTITY.................................. //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct identity_fn
-{
-    using is_transparent = void;
-
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
-        -> decltype(auto)
-    { return std::forward<T &&>(t); }
-};
-
-constexpr inline identity_fn identity;
-
-#if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
-static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
-#endif
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .................................ADDRESSOF.................................. //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct addressof_fn {
@@ -293,10 +273,10 @@ constexpr inline addressof_fn addressof;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct dereference_fn {
     template <typename T>
-        requires requires(T && t) { *std::forward<T>(t); }
+        requires requires(T && t) { *CB_FWD(t); }
     constexpr CB_STATIC
     auto operator()(T && obj) CB_CONST noexcept -> decltype(auto)
-    { return *std::forward<T>(obj); }
+    { return *CB_FWD(obj); }
 };
 
 constexpr inline dereference_fn dereference;
@@ -345,7 +325,7 @@ public:
     auto operator()(Args &&... args) CB_CONST
         noexcept(std::is_nothrow_constructible_v<T, Args...>)
         -> decltype(auto)
-    { return T(std::forward<Args>(args)...); }
+    { return T(CB_FWD(args)...); }
 };
 
 template <typename T>
@@ -359,9 +339,9 @@ struct get_fn
 {
     template <typename Obj>
     constexpr CB_STATIC
-    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(std::forward<Obj>(obj))))
+    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(CB_FWD(obj))))
         -> decltype(auto)
-    { return get<N>(std::forward<Obj>(obj)); }
+    { return get<N>(CB_FWD(obj)); }
 };
 
 template <std::size_t N>
@@ -562,23 +542,23 @@ constexpr inline from_container_fn from_container;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct value_or_fn
 {
-    template <class Opt, typename T>
+    template <nullable Opt, typename T>
     requires requires(Opt opt, T t) {
-        { static_cast<bool>(opt) };
-        { *opt } -> std::convertible_to<T>;
+        { callables::nullable_traits<Opt>::get_value(opt) } -> std::convertible_to<T>;
     }
     constexpr CB_STATIC
     auto operator()(Opt && opt, T && t) CB_CONST noexcept
         -> std::remove_cvref_t<decltype(*opt)>
     {
-        if (static_cast<bool>(opt)) {
-            return *CB_FWD(opt);
+        using traits = callables::nullable_traits<Opt>;
+        if (traits::is_null(opt)) {
+            return traits::get_value(CB_FWD(opt));
         }
         return CB_FWD(t);
     }
 
     template <typename Null, typename T>
-    requires std::same_as<Null, std::nullptr_t> or std::same_as<Null, std::nullopt_t>
+    requires is_null_type<Null>
     constexpr CB_STATIC
     auto operator()(Null &&, T && t) CB_CONST noexcept -> decltype(auto) { return CB_FWD(t); }
 
@@ -611,9 +591,9 @@ struct transform_at_fn
         constexpr auto _maybe_apply(T && t) -> decltype(auto)
         {
             if constexpr (I == N) {
-                return std::forward<Fn>(_fn)(std::forward<T>(t));
+                return CB_FWD(_fn)(CB_FWD(t));
             } else {
-                return std::forward<T>(t);
+                return CB_FWD(t);
             }
         }
 
@@ -624,14 +604,14 @@ struct transform_at_fn
 
         template <typename T, std::int64_t I>
         constexpr auto apply(T && t) -> decltype(auto)
-        { return ref(_maybe_apply<T, I>(std::forward<T>(t))); }
+        { return ref(_maybe_apply<T, I>(CB_FWD(t))); }
 
 
         template <typename Tuple>
             requires std::invocable<Fn, std::tuple_element_t<N, Tuple>>
         constexpr auto operator()(Tuple && tuple) -> decltype(auto)
         {
-            return [tp=std::forward<Tuple>(tuple),this]<std::size_t ...I>(std::index_sequence<I...>) mutable {
+            return [tp=CB_FWD(tuple),this]<std::size_t ...I>(std::index_sequence<I...>) mutable {
                 return std::make_tuple(
                     this->apply<std::tuple_element_t<I, Tuple>, I>(std::forward_like<Tuple>(std::get<I>(tp)))...
                 );
@@ -642,7 +622,7 @@ struct transform_at_fn
     template <typename Fn>
     constexpr CB_STATIC auto operator()(Fn && fn) CB_CONST noexcept
     {
-        return capture<Fn>(std::forward<Fn>(fn));
+        return capture<Fn>(CB_FWD(fn));
     }
 };
 
