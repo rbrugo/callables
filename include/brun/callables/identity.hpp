@@ -32,6 +32,7 @@
 #define IDENTITY_HPP
 
 #include "detail/config.hpp"
+#include <type_traits>
 
 namespace callables
 {
@@ -57,6 +58,15 @@ constexpr inline identity_fn identity;
 #if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
 static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
 #endif
+
+struct decay_copy_fn
+{
+    template <typename T>
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept -> std::remove_cvref_t<T>
+    { return CB_FWD(t); }
+};
+
+constexpr inline decay_copy_fn decay_copy;
 
 #undef CB_FWD
 } // namespace callables

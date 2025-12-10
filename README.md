@@ -47,6 +47,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `compose`
 - `on`: applies a binary function over a unary function
 - `identity`
+- `decay_copy`
 - `addressof`
 - `dereference`
 - `construct<T>`, `construct<T>.from_tuple`
