@@ -40,7 +40,8 @@
 #include <span>
 #include <cstdint>
 #include <functional>
-#include "identity.hpp"  // IWYU pragma: export
+#include "identity.hpp"     // IWYU pragma: export
+#include "combinators.hpp"  // IWYU pragma: export
 #include "nullable.hpp"
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
@@ -54,16 +55,16 @@ namespace callables
 #define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 // apply
-// compose
-// on
+// compose         : combinators
+// on              : combinators
 // construct
-// get  :  access
-// at  :  access
-// from_container  :  access
+// get             :  access   ?
+// at              :  access   ?
+// from_container  :  access   ?
 // addressof
 // dereference
 // value_or
-// transform_at  :  access
+// transform_at    :  access   ?
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
@@ -90,169 +91,6 @@ struct apply_fn : public binary_fn<apply_fn>
 };
 
 constexpr inline apply_fn apply;
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ..................................COMPOSE................................... //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct compose_fn
-{
-    template <typename ...Fns>
-    struct compose_fn_capture
-    {
-    private:
-        std::tuple<Fns...> _fns;
-
-        struct uncallable {};
-
-        template <typename ...Args>
-        constexpr
-        static auto call_with_args(std::tuple<Fns...> & tp, Args &&... args) -> decltype(auto)
-        { return _call_impl<0>(tp, CB_FWD(args)...); }
-
-        template <typename ...Args>
-        constexpr
-        static auto call_with_args(std::tuple<Fns...> const & tp, Args &&... args) -> decltype(auto)
-        { return _call_impl<0>(tp, CB_FWD(args)...); }
-
-        template <std::size_t I, typename Tuple, typename ...Args>
-        constexpr
-        static auto _call_impl(Tuple && fns, Args &&... args) -> decltype(auto)
-        {
-#           define GET(idx, tpl) std::get<idx>(CB_FWD(tpl))
-            if constexpr (I == sizeof...(Fns) - 1) {
-                if constexpr (std::invocable<std::tuple_element_t<I, std::remove_cvref_t<Tuple>>, Args...>) {
-                    return GET(I, fns)(CB_FWD(args)...);
-                } else if constexpr (sizeof...(Fns) != 1) {
-                    return uncallable{};
-                }
-            } else {
-                using nested_call_result = decltype(_call_impl<I + 1>(CB_FWD(fns), CB_FWD(args)...));
-                if constexpr (not std::same_as<nested_call_result, uncallable>) {
-                    return GET(I, fns)(_call_impl<I + 1>(CB_FWD(fns), CB_FWD(args)...));
-                } else {
-                    using fn_t = std::tuple_element_t<I, std::remove_cvref_t<Tuple>>;
-                    if constexpr ((std::invocable<fn_t, decltype(_call_impl<I + 1>(CB_FWD(fns), CB_FWD(args)))...>)) {
-                        return GET(I, fns)(_call_impl<I + 1>(CB_FWD(fns),CB_FWD(args))...);
-                    } else if constexpr (I != 0) {
-                        return uncallable{};
-                    }
-                }
-            }
-#           undef GET
-        }
-    public:
-        template <typename ...Fns2>
-            requires detail::pairwise_constructible<Fns...>::template from<Fns2...>
-        constexpr
-        compose_fn_capture(Fns2 &&... fns) : _fns{CB_FWD(fns)...} {}
-
-        template <typename ...Args>
-        constexpr auto operator()(Args &&... args) const -> decltype(auto)
-        { return call_with_args(_fns, CB_FWD(args)...); }
-
-        template <typename ...Args>
-        constexpr auto operator()(Args &&... args) -> decltype(auto)
-        { return call_with_args(_fns, CB_FWD(args)...); }
-    };
-
-    template <typename ...Fns>
-    constexpr CB_STATIC
-    auto operator()(Fns &&... fns) CB_CONST noexcept
-    {
-        return compose_fn_capture<Fns...>{CB_FWD(fns)...};
-    }
-};
-
-constexpr inline compose_fn compose;
-
-#if defined CB_TESTING_COMPOSE
-static_assert(compose([](auto x) { return x + 1; }, [](auto a, auto b) { return a + b; })(0, 2) == 3);
-static_assert(compose([](auto c) { return c - 'z'; }, [](auto c) { return c + 'z'; })('c') == 'c');
-static_assert(compose(+[](int a, int b) { return a + b; }, +[](int x) { return x; })(0, 0) == 0);
-#endif
-
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// .....................................ON..................................... //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct on_fn
-{
-    template <typename UnaryFn, typename BinaryFn>
-    struct inner : public binary_fn<inner<UnaryFn, BinaryFn>>, applicable_on_tuples<inner<UnaryFn, BinaryFn>>
-    {
-        [[no_unique_address]] UnaryFn _un;
-        [[no_unique_address]] BinaryFn _bin;
-
-        template <typename T, typename U>
-            requires requires(T && t, U && u) {
-                { _un(t) };
-                { _un(u) };
-                { _bin(_un(t), _un(u)) };
-            }
-        [[nodiscard]] constexpr auto operator()(T && t, U && u) const -> decltype(auto)
-        {
-            return _bin(_un(CB_FWD(t)), _un(CB_FWD(u)));
-        }
-
-        using inner::binary_fn::operator();
-    };
-
-    template <typename UnaryFn>
-    struct outer
-    {
-        [[no_unique_address]] UnaryFn _un;
-
-        template <typename BinaryFn>
-        [[nodiscard]] constexpr auto operator()(BinaryFn && binary) const & -> decltype(auto)
-        {
-            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{{}, _un, CB_FWD(binary)};
-        }
-
-        template <typename BinaryFn>
-        [[nodiscard]] constexpr auto operator()(BinaryFn && binary) && -> decltype(auto)
-        {
-            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{
-                {}, {}, std::move(_un), CB_FWD(binary)
-            };
-        }
-    };
-
-    template <typename UnaryFn>
-    [[nodiscard]] constexpr static auto operator()(UnaryFn && fn) noexcept
-    { return outer<std::remove_cvref_t<UnaryFn>>{CB_FWD(fn)}; }
-
-    template <typename UnaryFn, typename BinaryFn>
-    [[nodiscard]] constexpr static auto operator()(UnaryFn && unary, BinaryFn && binary) noexcept
-    {
-        return inner<std::remove_cvref_t<UnaryFn>, std::remove_cvref_t<BinaryFn>>{
-            {}, {}, CB_FWD(unary), CB_FWD(binary)
-        };
-    }
-};
-
-constexpr inline on_fn on;
-
-#if defined CB_TESTING_ON
-namespace _test
-{
-constexpr inline auto mod = [](auto const & x) static { return x % 2; };
-constexpr inline auto eq = [](auto const & a, auto const & b) static { return a == b; };
-constexpr inline auto ne = [](auto const & a, auto const & b) static { return a != b; };
-constexpr inline auto len = [](auto const & x) static { return size(x); };
-constexpr inline auto gt = [](auto const & a, auto const & b) static { return a > b; };
-constexpr inline auto lt = [](auto const & a, auto const & b) static { return a < b; };
-
-using std::string_view_literals::operator""sv;
-
-static_assert(on(mod, eq)(0, 2));
-static_assert(on(mod, ne)(0, 3));
-static_assert(on(mod, eq)(0)(2));
-static_assert(on(len)(eq)("ciao"sv)("hola"sv));
-static_assert(on(len)(eq)("ciao"sv)("hola"sv));
-static_assert(on(len)(lt).left("ciao"sv)("hello"sv));
-static_assert(on(len)(gt).right("ciao"sv)("hello"sv));
-}  // namespace _test
-#endif
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
