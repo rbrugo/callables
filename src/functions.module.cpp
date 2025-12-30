@@ -1,7 +1,7 @@
 /**
  * @author      : rbrugo (brugo.riccardo@gmail.com)
- * @created     : Saturday Dec 06, 2025 23:58:57 CET
- * @description : implementation of the identity function object
+ * @created     : Monday Dec 29, 2025 23:57:10 CET
+ * @description : export the objects from the "functions" header as module
  * @license     :
  * Boost Software License - Version 1.0 - August 17th, 2003
  * 
@@ -28,47 +28,27 @@
  * DEALINGS IN THE SOFTWARE.
  * */
 
-#ifndef CB_IDENTITY_HPP
-#define CB_IDENTITY_HPP
+module;
 
-#include <type_traits>
-#include "detail/_config_begin.hpp"
+#include <brun/callables/functions.hpp>
+
+export module callables.functions;
+
+export import callables.identity;
+export import callables.combinators;
+export import callables.nullable;
 
 namespace callables
 {
-// identity
-// decay_copy
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ..................................IDENTITY.................................. //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct identity_fn
-{
-    using is_transparent = void;
-
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
-        -> decltype(auto)
-    { return CB_FWD(t); }
-};
-
-constexpr inline identity_fn identity;
-
-#if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
-static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
-#endif
-
-struct decay_copy_fn
-{
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept -> std::remove_cvref_t<T>
-    { return CB_FWD(t); }
-};
-
-constexpr inline decay_copy_fn decay_copy;
-
-#undef CB_FWD
-} // namespace callables
-
-#include "detail/_config_end.hpp"  // IWYU pragma: export
-#endif /* IDENTITY_HPP */
+// NOLINTBEGIN
+export using callables::apply;
+export using callables::addressof;
+export using callables::dereference;
+export using callables::construct;
+export using callables::get;
+export using callables::at;
+export using callables::from_container;
+export using callables::value_or;
+export using callables::transform_at;
+// NOLINTEND
+}  // namespace callables

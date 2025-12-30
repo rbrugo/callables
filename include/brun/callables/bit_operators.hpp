@@ -40,6 +40,7 @@ namespace callables
 // bit_and
 // bit_or
 // bit_xor
+// bit_not
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_and................................... //

@@ -76,6 +76,7 @@ constexpr auto fmap(Fn && fn, std::vector<T, Alloc> && from)
 template <typename From, typename Fn, std::size_t N>
     requires std::invocable<Fn, From const &>
 constexpr auto fmap(Fn && fn, std::array<From, N> const & from)
+    noexcept(noexcept(fn(std::get<0>(from))))
 {
     return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
         return std::array{fn(std::get<Idx>(from))...};
@@ -85,44 +86,55 @@ constexpr auto fmap(Fn && fn, std::array<From, N> const & from)
 template <typename From, typename Fn, std::size_t N>
     requires std::invocable<Fn, From &&>
 constexpr auto fmap(Fn && fn, std::array<From, N> && from)
+    noexcept(noexcept(fn(std::move(std::get<0>(from)))))
 {
     return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
         return std::array{fn(std::move(std::get<Idx>(from)))...};
     }(std::make_index_sequence<N>());
 }
 
-
-
 // Overloads for std::optional
 template <typename Fn, typename From>
-static constexpr auto fmap(Fn && fn, std::optional<From> const & from) noexcept {
-    return from.transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::optional<From> const & from)
+    noexcept(noexcept(from.transform(CB_FWD(fn))))
+{
+    return from.transform(CB_FWD(fn));
 }
 
 template <typename Fn, typename From>
-static constexpr auto fmap(Fn && fn, std::optional<From> & from) noexcept {
-    return from.transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::optional<From> & from)
+    noexcept(noexcept(from.transform(CB_FWD(fn))))
+{
+    return from.transform(CB_FWD(fn));
 }
 
 template <typename Fn, typename From>
-static constexpr auto fmap(Fn && fn, std::optional<From> && from) noexcept {
-    return std::move(from).transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::optional<From> && from)
+    noexcept(noexcept(std::move(from).transform(CB_FWD(fn))))
+{
+    return std::move(from).transform(CB_FWD(fn));
 }
 
 // Overloads for std::expected
 template <typename Fn, typename From, typename Err>
-static constexpr auto fmap(Fn && fn, std::expected<From, Err> const & from) noexcept {
-    return from.transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::expected<From, Err> const & from)
+    noexcept(noexcept(from.transform(CB_FWD(fn))))
+{
+    return from.transform(CB_FWD(fn));
 }
 
 template <typename Fn, typename From, typename Err>
-static constexpr auto fmap(Fn && fn, std::expected<From, Err> & from) noexcept {
-    return from.transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::expected<From, Err> & from)
+    noexcept(noexcept(from.transform(CB_FWD(fn))))
+{
+    return from.transform(CB_FWD(fn));
 }
 
 template <typename Fn, typename From, typename Err>
-static constexpr auto fmap(Fn && fn, std::expected<From, Err> && from) noexcept {
-    return std::move(from).transform(std::forward<Fn>(fn));
+constexpr auto fmap(Fn && fn, std::expected<From, Err> && from)
+    noexcept(noexcept(std::move(from).transform(CB_FWD(fn))))
+{
+    return std::move(from).transform(CB_FWD(fn));
 }
 
 // Concepts

@@ -3,10 +3,13 @@
 # @file        : CMakeLists
 # @created     : Monday Aug 01, 2022 18:47:17 CEST
 ######################################################################
-cmake_minimum_required(VERSION 3.16.2)
+cmake_minimum_required(VERSION 4.2.0)
 
 project(callables VERSION 0.2.1 LANGUAGES CXX)
 include(cmake/general.cmake)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(callables INTERFACE)
 target_compile_features(callables INTERFACE cxx_std_23)
@@ -18,6 +21,34 @@ target_include_directories(callables
 
 enable_testing()
 add_subdirectory(test)
+
+# Modules
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD ON)
+add_library(callables_modules)
+target_compile_features(callables_modules PUBLIC cxx_std_23)
+target_sources(callables_modules
+    PUBLIC
+    FILE_SET callables_modules TYPE CXX_MODULES FILES
+        "src/arithmetic.module.cpp"
+        "src/bit_operators.module.cpp"
+        "src/combinators.module.cpp"
+        "src/comparison.module.cpp"
+        "src/format.module.cpp"
+        "src/identity.module.cpp"
+        "src/math.module.cpp"
+        "src/nullable.module.cpp"
+        "src/functions.module.cpp"
+        "src/ordering.module.cpp"
+        "src/operators.module.cpp"
+        "src/functor.module.cpp"
+        "src/callables.module.cpp"
+)
+target_link_libraries(callables_modules PUBLIC callables)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    target_compile_options(callables_modules PRIVATE -fdiagnostics-color=always )
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    target_compile_options(callables_modules PRIVATE -fcolor-diagnostics)
+endif()
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 #                              packaging                               #
@@ -36,12 +67,21 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion
 )
 
-install(TARGETS callables EXPORT ${PROJECT_NAME}-targets)
+install(TARGETS callables
+    EXPORT ${PROJECT_NAME}-targets
+    FILE_SET CXX_MODULES
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/my_package/src
+    FILE_SET HEADERS
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    INCLUDES
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 install(EXPORT ${PROJECT_NAME}-targets
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
     NAMESPACE callables::
     FILE "${PROJECT_NAME}-targets.cmake"
+    CXX_MODULES_DIRECTORY .
 )
 
 install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/include/

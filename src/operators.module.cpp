@@ -1,7 +1,7 @@
 /**
  * @author      : rbrugo (brugo.riccardo@gmail.com)
- * @created     : Saturday Dec 06, 2025 23:58:57 CET
- * @description : implementation of the identity function object
+ * @created     : Tuesday Dec 30, 2025 00:03:36 CET
+ * @description : export arithmetic, bit and comparison operators as module
  * @license     :
  * Boost Software License - Version 1.0 - August 17th, 2003
  * 
@@ -28,47 +28,11 @@
  * DEALINGS IN THE SOFTWARE.
  * */
 
-#ifndef CB_IDENTITY_HPP
-#define CB_IDENTITY_HPP
+module;
 
-#include <type_traits>
-#include "detail/_config_begin.hpp"
+#include <brun/callables/operators.hpp>
 
-namespace callables
-{
-// identity
-// decay_copy
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ..................................IDENTITY.................................. //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct identity_fn
-{
-    using is_transparent = void;
-
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
-        -> decltype(auto)
-    { return CB_FWD(t); }
-};
-
-constexpr inline identity_fn identity;
-
-#if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
-static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
-#endif
-
-struct decay_copy_fn
-{
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept -> std::remove_cvref_t<T>
-    { return CB_FWD(t); }
-};
-
-constexpr inline decay_copy_fn decay_copy;
-
-#undef CB_FWD
-} // namespace callables
-
-#include "detail/_config_end.hpp"  // IWYU pragma: export
-#endif /* IDENTITY_HPP */
+export module callables.operators;
+export import callables.arithmetic;
+export import callables.bit_operators;
+export import callables.ordering;

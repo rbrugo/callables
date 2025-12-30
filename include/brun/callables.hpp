@@ -11,5 +11,6 @@
 #include "callables/comparison.hpp"
 #include "callables/functions.hpp"
 #include "callables/format.hpp"
+#include "callables/math.hpp"
 
 #endif /* CALLABLES_HPP */
