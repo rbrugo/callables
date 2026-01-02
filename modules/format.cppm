@@ -40,6 +40,14 @@ namespace callables
 // NOLINTBEGIN
 export using callables::to_string;
 export using callables::format;
+namespace policy
+{
+    using policy::use_exception;
+    using policy::use_pair_with_errc;
+    using policy::use_optional;
+    using policy::use_expected;
+}  // namespace policy
+export using callables::ston;
 // NOLINTEND
 }  // namespace callables
 #endif
