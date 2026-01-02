@@ -56,6 +56,7 @@ namespace callables
 // from_container  :  access   ?
 // addressof
 // dereference
+// not_
 // value_or
 // transform_at    :  access   ?
 
@@ -111,6 +112,27 @@ struct dereference_fn {
 };
 
 constexpr inline dereference_fn dereference;
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................NOT_FN................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct not_fn
+{
+    template <typename Fn, typename ...Args>
+        requires (std::invocable<Fn, Args...> and sizeof...(Args) >= 1)
+    constexpr CB_STATIC auto operator()(Fn && fn, Args &&... args)
+    {
+        return not CB_FWD(fn)(CB_FWD(args)...);
+    }
+
+    template <typename T>
+    [[nodiscard]] constexpr
+    CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept(partial<not_fn, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}))
+    { return partial<not_fn, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}; }
+};
+
+constexpr inline not_fn not_;
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //

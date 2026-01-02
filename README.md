@@ -42,7 +42,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `bit_xor`
 - `bit_not`
 
-***Functional:***
+***Functions:***
 - `apply`
 - `compose`
 - `on`: applies a binary function over a unary function
@@ -50,6 +50,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `decay_copy`
 - `addressof`
 - `dereference`
+- `not_`
 - `construct<T>`, `construct<T>.from_tuple`
 - `get<N>`
 - `at(N)`, `at[N]`

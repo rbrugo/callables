@@ -185,6 +185,24 @@ int main()
             }
         };
     };
+    "not_fn"_test = [] {
+        using callables::not_;
+        auto [p1, p1_expr] = DECLARE([](int a, int b) { return a == b; });
+        auto [p2, p2_expr] = DECLARE([](auto x) { return x.size() == 1; });
+        should("negate function results immediately") = [&]{
+            expect(!not_(p1, 1, 1)) << p1_expr << "with arguments 1, 1";
+            expect(not_(p1, 1, 2)) << "not" << p1_expr << "with arguments 1, 2";
+            expect(!not_(p2, std::array<float, 1>{})) << p2_expr << "with arg array<float, 1>{}";
+            expect(not_(p2, std::array<float, 2>{})) << "not" << p2_expr << "with arg array<float, 2>{}";
+        };
+        should("negate function results with currying") = [&]{
+            auto sa = not_(p1);
+            expect(!not_(p1)(1, 1)) << p1_expr << "with arguments 1, 1";
+            expect(not_(p1, 1, 2)) << "not" << p1_expr << "with arguments 1, 2";
+            expect(!not_(p2, std::array<float, 1>{})) << p2_expr << "with arg array<float, 1>{}";
+            expect(not_(p2, std::array<float, 2>{})) << "not" << p2_expr << "with arg array<float, 2>{}";
+        };
+    };
 }
 
 #undef DECLARE
