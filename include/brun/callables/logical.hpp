@@ -36,12 +36,10 @@
 
 namespace callables
 {
-
-
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................AND..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct and_fn : public binary_fn<and_fn>, applicable_on_tuples<and_fn>
+struct logical_and_fn : public binary_fn<logical_and_fn>, applicable_on_tuples<logical_and_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) and CB_FWD(u); }
@@ -50,15 +48,15 @@ struct and_fn : public binary_fn<and_fn>, applicable_on_tuples<and_fn>
         -> decltype(auto)
     { return CB_FWD(t) and CB_FWD(u); }
 
-    using binary_fn<and_fn>::operator();
+    using binary_fn::operator();
 };
 
-constexpr inline and_fn and_;
+constexpr inline logical_and_fn logical_and;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .....................................OR..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct or_fn : public binary_fn<or_fn>, applicable_on_tuples<or_fn>
+struct logical_or_fn : public binary_fn<logical_or_fn>, applicable_on_tuples<logical_or_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) or CB_FWD(u); }
@@ -67,15 +65,15 @@ struct or_fn : public binary_fn<or_fn>, applicable_on_tuples<or_fn>
         -> decltype(auto)
     { return CB_FWD(t) or CB_FWD(u); }
 
-    using binary_fn<or_fn>::operator();
+    using binary_fn::operator();
 };
 
-constexpr inline or_fn or_;
+constexpr inline logical_or_fn logical_or;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .....................................XOR.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct xor_fn : public binary_fn<xor_fn>, applicable_on_tuples<xor_fn>
+struct logical_xor_fn : public binary_fn<logical_xor_fn>, applicable_on_tuples<logical_xor_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) xor CB_FWD(u); }
@@ -84,23 +82,25 @@ struct xor_fn : public binary_fn<xor_fn>, applicable_on_tuples<xor_fn>
         -> decltype(auto)
     { return CB_FWD(t) xor CB_FWD(u); }
 
-    using binary_fn<xor_fn>::operator();
+    using binary_fn::operator();
 };
 
-constexpr inline xor_fn xor_;
+constexpr inline logical_xor_fn logical_xor;
+
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................NOT..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct not_fn
+struct logical_not_fn
 {
     template <typename T>
-        requires requires(T && t) { not CB_FWD(t); }
     constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept( not CB_FWD(t) ))
-    { return not CB_FWD(t); }
+    {
+        return not CB_FWD(t);
+    }
 };
 
-constexpr inline not_fn not_;
+constexpr inline logical_not_fn logical_not;
 
 } // namespace callables
 
