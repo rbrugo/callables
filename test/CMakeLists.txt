@@ -23,8 +23,14 @@ add_executable(ordering ordering.cpp)
 target_include_directories(ordering PRIVATE include)
 target_link_libraries(ordering PRIVATE callables)
 
+# logical operators tests
+add_executable(logical logical.cpp)
+target_include_directories(logical PRIVATE include)
+target_link_libraries(logical PRIVATE callables)
+
 add_test(arithmetic arithmetic)
 add_test(bit_operators bit_operators)
 add_test(functions functions)
 add_test(comparison comparison)
 add_test(ordering ordering)
+add_test(logical ordering)

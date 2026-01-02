@@ -34,5 +34,6 @@
 #include "arithmetic.hpp"     // IWYU pragma: export
 #include "bit_operators.hpp"  // IWYU pragma: export
 #include "ordering.hpp"       // IWYU pragma: export
+#include "logical.hpp"        // IWYU pragma: export
 
 #endif /* CB_OPERATORS_HPP */

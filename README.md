@@ -75,6 +75,12 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 ***Math:***
 - `abs`
 
+***Logical:***
+- `and_`
+- `or_`
+- `xor_`
+- `not_`
+
 ***Formatting***
 - `to_string`
 - `format<fmt>`, templated with a format string
