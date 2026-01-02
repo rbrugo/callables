@@ -78,9 +78,16 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 ***Formatting***
 - `to_string`
 - `format<fmt>`, templated with a format string
+- `ston` string-to-number, templated with number type, result policy (default: `use_exception`) and base (`10`)
 
 ***Range actions***
 - `fold`
+
+***Result Policies***
+- `policy::use_exception`: result will be returned as it is; in case of failure, an exception will be thrown
+- `policy::use_pair_with_errc`: result will be returned in a `pair<T, std::errc>`
+- `policy::use_optional`: result will be returned in an `optional<T>`, that will be empty in case of failure
+- `policy::use_expected`: result or error will be returned in an `expected<T, std::errc>`
 
 
 All bit, arithmetic, equality and ordering operators have a member `.tuple` that accepts a tuple-like

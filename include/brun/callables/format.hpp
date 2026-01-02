@@ -97,6 +97,113 @@ template <fixed_string Fmt>
 constexpr inline auto format = format_t<Fmt>{};
 #endif  // CB_HAS_FORMAT
 
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................STON.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+namespace policy
+{
+struct use_exception
+{
+    template <typename T>
+    using result_t = T;
+
+    template <typename T>
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept -> result_t<T>
+    {
+        return CB_FWD(t);
+    }
+
+    template <typename T>
+    [[noreturn]] CB_STATIC constexpr auto make_failure(std::errc error) CB_CONST -> result_t<T>
+    {
+        throw std::system_error{std::make_error_code(error)};
+    }
+};
+struct use_pair_with_errc {
+    template <typename T> using result_t = std::pair<T, std::errc>;
+    template <typename T>
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t), std::errc()}))
+        -> result_t<T>
+    {
+        return result_t{CB_FWD(t), std::errc()};
+    }
+
+    template <typename T>
+    CB_STATIC constexpr auto make_failure(std::errc error) CB_CONST noexcept(noexcept(T()))
+        -> result_t<T>
+    {
+        return result_t{T(), error};
+    }
+};
+struct use_optional {
+    template <typename T> using result_t = std::optional<T>;
+    template <typename T>
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t)}))
+        -> result_t<T>
+    {
+        return std::optional{CB_FWD(t)};
+    }
+    template <typename T>
+    CB_STATIC constexpr auto make_failure(std::errc error) CB_CONST noexcept
+        -> result_t<T>
+    {
+        return std::nullopt;
+    }
+};
+struct use_expected {
+#if CB_HAS_EXPECTED == 1
+    template <typename T> using result_t = std::expected<T, std::errc>;
+    template <typename T>
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t)}))
+        -> result_t<T>
+    {
+        return std::expected<T, std::errc>{CB_FWD(t)};
+    }
+    template <typename T>
+    CB_STATIC constexpr auto make_failure(std::errc error) CB_CONST noexcept
+        -> result_t<T>
+    {
+        return std::unexpected<std::errc>(error);
+    }
+#else
+    static_assert(false, "can't use `std::expected` with this compiler configuration");
+#endif
+};
+}  // namespace policy
+
+template <typename Num, typename ResultPolicy, int Base>
+struct ston_fn
+{
+    static_assert(Base >= 2 and Base <= 32, "the base must be included within [2,32]");
+
+    static constexpr auto use_exception = std::same_as<ResultPolicy, policy::use_exception>;
+
+    template <std::contiguous_iterator It, std::sentinel_for<It> Sent>
+        requires (std::same_as<std::iter_value_t<It>, char>)
+    [[nodiscard]]
+    CB_STATIC constexpr
+    auto operator()(It && begin, Sent && end) noexcept(not use_exception)
+    {
+        auto result = Num{};
+        auto [ptr, ec] = std::from_chars(std::to_address(begin), std::to_address(end), result, Base);
+        if (ec == std::errc()) {
+            return ResultPolicy::make_result(result);
+        }
+        return ResultPolicy::template make_failure<Num>(ec);
+    }
+
+    template <std::ranges::contiguous_range Rng>
+        requires (std::same_as<std::ranges::range_value_t<Rng>, char>)
+    [[nodiscard]]
+    CB_STATIC constexpr auto operator()(Rng && rng) noexcept(not use_exception)
+    {
+        return operator()(std::ranges::begin(rng), std::ranges::end(rng));
+    }
+};
+
+template <typename Num, typename Policy = policy::use_exception, int Base = 10>
+constexpr inline ston_fn<Num, Policy, Base> ston;
+
 } // namespace callables
 
 #include "detail/_config_end.hpp"  // IWYU pragma: export
