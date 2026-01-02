@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "../identity.hpp"
+#include "../detail/_config_begin.hpp"
 
 /*
  * Implements the `functor` concept and the `fmap` CPO.
@@ -26,7 +27,6 @@
 
 namespace callables
 {
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 namespace _functor {
 // Overloads for `std::vector`
@@ -175,7 +175,7 @@ concept functor = requires(T f) {
     { fmap(decay_copy, f) } -> std::same_as<std::decay_t<T>>;
 };
 
-#undef CB_FWD
 }  // namespace callables
 
+#include "../detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_FUNCTIONAL_FUNCTOR_HPP */

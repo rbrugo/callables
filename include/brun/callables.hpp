@@ -13,4 +13,3 @@
 #include "callables/format.hpp"
 
 #endif /* CALLABLES_HPP */
-

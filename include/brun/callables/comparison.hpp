@@ -35,13 +35,11 @@
 #include "detail/functional.hpp"
 #include "detail/partial.hpp"
 
+#include "detail/_config_begin.hpp"
 namespace callables
 {
-
 // equal_to
 // not_equal_to
-
-#define CB_FWD(x) std::forward<decltype(x)>(x)
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................EQUAL_TO.................................. //
@@ -89,7 +87,7 @@ struct not_equal_to_fn : public compare_operator<not_equal_to_fn>
 
 constexpr inline not_equal_to_fn not_equal_to;
 
-#undef CB_FWD
 } // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_COMPARISON_HPP */

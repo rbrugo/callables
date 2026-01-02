@@ -31,16 +31,25 @@
 #ifndef CB_FORMAT_HPP
 #define CB_FORMAT_HPP
 
-#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907
+#include <iterator>
+#include <ranges>
+#include "detail/_config_begin.hpp"
 
+#if CB_HAS_FORMAT == 1
 #include <format>
+#endif
+#if CB_HAS_EXPECTED == 1
+#include <expected>
+#endif
 
 namespace callables
 {
 
 // to_string
 // format
+// ston (string to number)
 
+#if CB_HAS_FORMAT == 1
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .................................TO_STRING.................................. //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -86,8 +95,9 @@ struct format_t
 
 template <fixed_string Fmt>
 constexpr inline auto format = format_t<Fmt>{};
+#endif  // CB_HAS_FORMAT
 
 } // namespace callables
 
-#endif /* defined(_cpp_lib_format) */
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_FORMAT_HPP */

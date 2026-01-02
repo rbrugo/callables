@@ -33,7 +33,7 @@
 
 #include <concepts>
 #include <utility>
-#include "config.hpp"
+#include "_config_begin.hpp"
 
 namespace callables
 {
@@ -171,4 +171,5 @@ struct applicable_on_tuples
 #undef CB_FWD
 } // namespace callables
 
+#include "_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_DETAIL_PARTIAL_HPP */

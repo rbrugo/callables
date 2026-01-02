@@ -9,8 +9,7 @@
 
 #include <optional>
 
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
-
+#include "detail/_config_begin.hpp"
 namespace callables
 {
 // constexpr inline struct null_t {} null;
@@ -113,7 +112,7 @@ template <typename T> concept nullable = requires(T const & t) {
 // static_assert(nullable_traits<std::optional<int>>::is_null({}));
 // static_assert(std::optional<int>{} == null);
 
-#undef CB_FWD
 }  // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_NULLABLE_HPP */

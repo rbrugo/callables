@@ -1,7 +1,6 @@
 /**
- * @author      : rbrugo (brugo.riccardo@gmail.com)
- * @created     : Saturday Dec 06, 2025 23:58:57 CET
- * @description : implementation of the identity function object
+ * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
+ * @created     : Tuesday Aug 22, 2023 23:59:29 CEST
  * @license     :
  * Boost Software License - Version 1.0 - August 17th, 2003
  * 
@@ -28,46 +27,39 @@
  * DEALINGS IN THE SOFTWARE.
  * */
 
-#ifndef CB_IDENTITY_HPP
-#define CB_IDENTITY_HPP
+#ifndef CB_DETAIL_CONFIG_BEGIN_HPP
+// Define here all the macros. Undef them in _config_end.hpp
 
-#include <type_traits>
-#include "detail/_config_begin.hpp"
+#include <version>
+#define CB_DETAIL_CONFIG
 
-namespace callables
-{
-// identity
 
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ..................................IDENTITY.................................. //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct identity_fn
-{
-    using is_transparent = void;
-
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept
-        -> decltype(auto)
-    { return CB_FWD(t); }
-};
-
-constexpr inline identity_fn identity;
-
-#if defined CB_TESTING_ON || defined CB_TESTING_IDENTITY
-static_assert(on(identity, [](auto a, auto b) { return a != b; })(1, 2));
+#if defined(__cpp_static_call_operator) && __cpp_static_call_operator >= 202207L
+#define CB_STATIC static
+#define CB_CONST
+#else
+#define CB_STATIC
+#define CB_CONST const
 #endif
 
-struct decay_copy_fn
-{
-    template <typename T>
-    constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept -> std::remove_cvref_t<T>
-    { return CB_FWD(t); }
-};
+#if defined(__cpp_lib_format) && __cpp_lib_format >= 201907
+#   define CB_HAS_FORMAT 1
+#else
+#   define CB_HAS_FORMAT 0
+#endif
+#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
+#   define CB_HAS_EXPECTED 1
+#else
+#   define CB_HAS_EXPECTED 0
+#endif
 
-constexpr inline decay_copy_fn decay_copy;
 
-#undef CB_FWD
-} // namespace callables
+#if defined(__cpp_multidimensional_subscript) && __cpp_multidimensional_subscript >= 202110L
+#define CB_HAS_MD_SUBSCRIPT 1
+#else
+#define CB_HAS_MD_SUBSCRIPT 0
+#endif
 
-#include "detail/_config_end.hpp"  // IWYU pragma: export
-#endif /* IDENTITY_HPP */
+#define CB_FWD(x) static_cast<decltype(x) &&>(x)
+
+#endif /* CB_DETAIL_CONFIG_BEGIN_HPP */

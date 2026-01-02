@@ -32,6 +32,7 @@
 #define CB_ARITHMETIC_HPP
 
 #include "detail/partial.hpp"
+#include "detail/_config_begin.hpp"
 
 namespace callables
 {
@@ -42,7 +43,6 @@ namespace callables
 // divides
 // negate
 
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................PLUS.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -124,7 +124,7 @@ struct negate_fn
 
 constexpr inline negate_fn negate;
 
-#undef CB_FWD
 } // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_ARITHMETIC_HPP */

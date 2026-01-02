@@ -32,6 +32,7 @@
 #define CB_BIT_OPERATORS_HPP
 
 #include "detail/partial.hpp"
+#include "detail/_config_begin.hpp"
 
 namespace callables
 {
@@ -40,7 +41,6 @@ namespace callables
 // bit_or
 // bit_xor
 
-#define CB_FWD(x) std::forward<decltype(x)>(x)
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_and................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -98,14 +98,14 @@ constexpr inline bit_xor_fn bit_xor;
 struct bit_not_fn
 {
     template <typename T>
-        requires requires(T && t) { -CB_FWD(t); }
+        requires requires(T && t) { ~CB_FWD(t); }
     constexpr CB_STATIC auto operator()(T && t) CB_CONST noexcept(noexcept( ~CB_FWD(t) ))
     { return ~CB_FWD(t); }
 };
 
 constexpr inline bit_not_fn bit_not;
 
-#undef CB_FWD
 } // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_BIT_OPERATORS_HPP */

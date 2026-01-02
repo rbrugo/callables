@@ -11,10 +11,9 @@
 #include <tuple>
 #include "detail/partial.hpp"
 
+#include "detail/_config_begin.hpp"
 namespace callables
 {
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
-
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -182,4 +181,5 @@ static_assert(on(len)(gt).right("ciao"sv)("hello"sv));
 #endif
 }  // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_COMBINATORS_HPP */

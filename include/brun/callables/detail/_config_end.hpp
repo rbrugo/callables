@@ -1,6 +1,6 @@
 /**
- * @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
- * @created     : Tuesday Aug 22, 2023 23:59:29 CEST
+ * @author      : rbrugo (brugo.riccardo@gmail.com)
+ * @created     : Friday Jan 02, 2026 20:02:29 CET
  * @license     :
  * Boost Software License - Version 1.0 - August 17th, 2003
  * 
@@ -27,15 +27,13 @@
  * DEALINGS IN THE SOFTWARE.
  * */
 
-#ifndef CB_DETAIL_CONFIG_HPP
-#define CB_DETAIL_CONFIG_HPP
+#ifndef CB_DETAIL_CONFIG_END_HPP
+// #define CB_DETAIL_CONFIG_END_HPP
 
-#if defined(__cpp_static_call_operator) && __cpp_static_call_operator >= 202207L
-#define CB_STATIC static
-#define CB_CONST
-#else
-#define CB_STATIC
-#define CB_CONST const
-#endif
+#undef CB_STATIC
+#undef CB_CONST
 
-#endif /* CB_DETAIL_CONFIG_HPP */
+#undef CB_FWD
+
+#undef CB_DETAIL_CONFIG
+#endif /* CB_DETAIL_CONFIG_END_HPP */

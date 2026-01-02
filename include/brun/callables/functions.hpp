@@ -31,12 +31,6 @@
 #ifndef CB_FUNCTIONS_HPP
 #define CB_FUNCTIONS_HPP
 
-#if defined(__cpp_multidimensional_subscript) && __cpp_multidimensional_subscript >= 202110L
-#define CB_HAS_MD_SUBSCRIPT 1
-#else
-#define CB_HAS_MD_SUBSCRIPT 0
-#endif
-
 #include <span>
 #include <cstdint>
 #include <functional>
@@ -46,14 +40,13 @@
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
 
+#include "detail/_config_begin.hpp"
 #if defined CB_TESTING_ON
 #include <string_view>
 #endif
 
 namespace callables
 {
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
-
 // apply
 // compose         : combinators
 // on              : combinators
@@ -213,7 +206,7 @@ struct at_fn
         }
     };
 
-#if CB_HAS_MD_SUBSCRIPT
+#if CB_HAS_MD_SUBSCRIPT == 1
     template <typename ...N>
     struct use_op
     {
@@ -260,7 +253,7 @@ struct at_fn
         -> decltype(auto)
     { return CB_FWD(obj).at(CB_FWD(n)...); }
 
-#if CB_HAS_MD_SUBSCRIPT
+#if CB_HAS_MD_SUBSCRIPT == 1
     template <typename ...N>
         requires (sizeof...(N) > 0)
     constexpr CB_STATIC
@@ -328,7 +321,7 @@ struct from_container_fn
             return use_at(CB_FWD(c), CB_FWD(i));
         } else if constexpr (requires { CB_FWD(c)[CB_FWD(i)]; }) {
             return use_op(CB_FWD(c), CB_FWD(i));
-        } else if (std::ranges::range<Cont>) {
+        } else if constexpr (std::ranges::range<Cont>) {
             return use_iterators(CB_FWD(c), CB_FWD(i));
         } else {
             static_assert(false, "the container must be indexable via op[], .at or iterators");
@@ -472,7 +465,7 @@ static_assert(transform_at<1>([](auto x) { return x * 2; })(std::tuple{0, 10}) =
 static_assert(transform_at<0>([](auto  ) { return 'a'; })(std::tuple{0, 10}) == std::tuple{'a', 10});
 #endif
 
-#undef CB_FWD
 } // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_FUNCTIONS_HPP */

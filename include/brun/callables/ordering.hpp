@@ -35,13 +35,12 @@
 #include "comparison.hpp"      // IWYU pragma: export
 #include "detail/partial.hpp"
 
+#include "detail/_config_begin.hpp"
 namespace callables
 {
 
 // less / less_equal
 // greater / greater_equal
-
-#define CB_FWD(x) std::forward<decltype(x)>(x)
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................LESS.................................... //
@@ -135,7 +134,7 @@ struct greater_equal_fn : public compare_operator<greater_equal_fn>
 
 constexpr inline greater_equal_fn greater_equal;
 
-#undef CB_FWD
 } // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_ORDERING_HPP */

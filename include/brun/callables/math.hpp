@@ -34,6 +34,7 @@
 #include "arithmetic.hpp"  // IWYU pragma: export
 #include <cmath>
 
+#include "detail/_config_begin.hpp"
 namespace callables
 {
 
@@ -57,4 +58,5 @@ struct abs_fn
 constexpr inline abs_fn abs;
 }  // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif  // CB_MATH_HPP
