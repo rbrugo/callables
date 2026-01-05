@@ -31,17 +31,33 @@
 #ifndef CB_ACTIONS_HPP
 #define CB_ACTIONS_HPP
 
+#include <iterator>
+#include <ranges>
+#include <algorithm>
+
+#include "identity.hpp"
+#include "ordering.hpp"
+
+#include "detail/_config_begin.hpp"
+
 namespace callables
 {
 
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-// ....oooOO0OOooo....                 FOLD                 ....oooOO0OOooo......
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+// fold (left)
+// sort
 
-template <typename Action, typename BinaryOp, typename Init>
+template <typename T>
+constexpr inline auto use_projection = true;
+
+template <typename T>
+    requires requires() { { T::use_projection } -> std::convertible_to<bool>; }
+constexpr inline auto use_projection<T> = static_cast<bool>(T::use_projection);
+
+template <typename Action, typename BinaryOp, typename Proj, typename Init>
 struct action_capture
 {
     [[no_unique_address]] BinaryOp _fn;
+    [[no_unique_address]] Proj _proj;
     Init _init;
 
     template <std::ranges::input_range Rng>
@@ -49,72 +65,186 @@ struct action_capture
         and std::convertible_to<std::invoke_result_t<BinaryOp, Init, std::ranges::range_value_t<Rng>>, Init>
     constexpr auto operator()(Rng && rng) const -> decltype(auto)
     {
-        return Action{}(std::forward<Rng>(rng), _init, std::cref(_fn));
+        if constexpr (use_projection<Action>) {
+            return Action{}(std::forward<Rng>(rng), _init, std::cref(_fn), std::cref(_proj));
+        } else {
+            return Action{}(std::forward<Rng>(rng), _init, std::cref(_fn));
+        }
     }
 };
 
-template <typename Action, typename BinaryOp>
-struct action_capture<Action, BinaryOp, void>
+template <typename Action, typename BinaryOp, typename Proj, typename Init>
+    requires std::is_empty_v<BinaryOp> and std::is_empty_v<Proj>
+struct action_capture<Action, BinaryOp, Proj, Init>
+{
+    Init _init;
+
+    template <std::ranges::input_range Rng>
+        requires std::invocable<BinaryOp, Init, std::ranges::range_value_t<Rng>>
+        and std::convertible_to<std::invoke_result_t<BinaryOp, Init, std::ranges::range_value_t<Rng>>, Init>
+    constexpr auto operator()(Rng && rng) const -> decltype(auto)
+    {
+        if constexpr (use_projection<Action>) {
+            return Action{}(std::forward<Rng>(rng), _init, BinaryOp{}, Proj{});
+        } else {
+            return Action{}(std::forward<Rng>(rng), _init, BinaryOp{});
+        }
+    }
+};
+
+template <typename Action, typename BinaryOp, typename Proj>
+struct action_capture<Action, BinaryOp, Proj, void>
 {
     [[no_unique_address]] BinaryOp _fn;
+    [[no_unique_address]] Proj _proj;
 
     template <std::ranges::input_range Rng>
         requires std::invocable<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>
-        and std::convertible_to<
-            std::invoke_result_t<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>,
-            std::ranges::range_value_t<Rng>
-        >
+        // and std::convertible_to<
+        //     std::invoke_result_t<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>,
+        //     std::ranges::range_value_t<Rng>
+        // >
     constexpr auto operator()(Rng && rng) const -> decltype(auto)
     {
-        return Action{}(std::forward<Rng>(rng), std::cref(_fn));
+        if constexpr (use_projection<Action>) {
+            return Action{}(std::forward<Rng>(rng), std::cref(_fn), std::cref(_proj));
+        } else {
+            return Action{}(std::forward<Rng>(rng), std::cref(_fn));
+        }
     }
 };
 
-template <std::ranges::input_range Rng, typename Action, typename Cb, typename I>
-    requires std::invocable<action_capture<Action, Cb, I>, Rng>
-constexpr auto operator|(Rng && rng, action_capture<Action, Cb, I> const & capture) -> decltype(auto)
+template <typename Action, typename BinaryOp, typename Proj>
+    requires std::is_empty_v<BinaryOp> and std::is_empty_v<Proj>
+struct action_capture<Action, BinaryOp, Proj, void>
+{
+    template <std::ranges::input_range Rng>
+        requires std::invocable<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>
+        // and std::convertible_to<
+        //     std::invoke_result_t<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>,
+        //     std::ranges::range_value_t<Rng>
+        // >
+    constexpr auto operator()(Rng && rng) const -> decltype(auto)
+    {
+        if constexpr (use_projection<Action>) {
+            return Action{}(std::forward<Rng>(rng), BinaryOp{}, Proj{});
+        } else {
+            return Action{}(std::forward<Rng>(rng), BinaryOp{});
+        }
+    }
+};
+
+template <std::ranges::input_range Rng, typename Action, typename Cb, typename Proj, typename I>
+    requires std::invocable<action_capture<Action, Cb, Proj, I>, Rng>
+constexpr auto operator|(Rng && rng, action_capture<Action, Cb, Proj, I> const & capture) -> decltype(auto)
 {
     return capture(std::forward<Rng>(rng));
 }
 
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................FOLD.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+
 struct fold_fn
 {
-    template <std::input_iterator I, std::sentinel_for<I> S, typename Init = std::iter_value_t<I>, typename Cb>
-    constexpr static auto operator()(I first, S last, Init init, Cb binary_fn) -> decltype(auto)
+    static constexpr auto use_projection = false;
+
+    template <
+        std::input_iterator I, std::sentinel_for<I> S, typename Init = std::iter_value_t<I>,
+        typename BinaryOp, typename Proj = identity_fn
+    >
+    constexpr static auto operator()(I first, S last, Init init, BinaryOp binary_fn, Proj proj = {}) -> decltype(auto)
     {
-        return std::ranges::fold_left(std::forward<I>(first), std::forward<S>(last), std::move(init), std::move(binary_fn));
+        return std::ranges::fold_left(std::move(first), std::move(last), std::move(init), std::move(binary_fn));
     }
 
     template <std::ranges::input_range Rng, typename Init = std::ranges::range_value_t<Rng>, typename Cb>
-    constexpr static auto operator()(Rng && rng, Init init, Cb binary_fn) -> decltype(auto)
+    constexpr static auto operator()(Rng && rng, Init && init, Cb binary_fn) -> decltype(auto)
     {
-        return std::ranges::fold_left(std::forward<Rng>(rng), std::move(init), std::move(binary_fn));
+        return std::ranges::fold_left(CB_FWD(rng), std::move(init), std::move(binary_fn));
     }
 
     template <std::input_iterator I, std::sentinel_for<I> S, typename Cb>
     constexpr static auto operator()(I first, S last, Cb binary_fn) -> decltype(auto)
     {
-        return std::ranges::fold_left_first(std::forward<I>(first), std::forward<S>(last), std::move(binary_fn));
+        return std::ranges::fold_left_first(std::move(first), std::move(last), std::move(binary_fn));
     }
 
     template <std::ranges::input_range Rng, typename Cb>
     constexpr static auto operator()(Rng && rng, Cb binary_fn) -> decltype(auto)
     {
-        return std::ranges::fold_left_first(std::forward<Rng>(rng), std::move(binary_fn));
+        return std::ranges::fold_left_first(CB_FWD(rng), std::move(binary_fn));
     }
 
+    // Partial applicators and "pipe launchers"
     template <typename Cb, typename Init>
         requires (not std::ranges::input_range<Cb>)
     constexpr static auto operator()(Cb binary_fn, Init init) noexcept
-    { return action_capture<fold_fn, Cb, Init>{std::move(binary_fn), std::move(init)}; }
+    {
+        if constexpr (std::is_empty_v<std::remove_cvref_t<Cb>>) {
+            return action_capture<fold_fn, Cb, identity_fn, Init>{std::move(init)};
+        } else {
+            return action_capture<fold_fn, Cb, identity_fn, Init>{std::move(binary_fn), {}, std::move(init)};
+        }
+    }
 
     template <typename Cb>
     constexpr static auto operator()(Cb binary_fn) noexcept
-    { return action_capture<fold_fn, Cb, void>{std::move(binary_fn)}; }
+    {
+        if constexpr (std::is_empty_v<std::remove_cvref_t<Cb>>) {
+            return action_capture<fold_fn, Cb, identity_fn, void>{};
+        } else {
+            return action_capture<fold_fn, Cb, identity_fn, void>{std::move(binary_fn), {}};
+        }
+    }
 };
 
 constexpr inline fold_fn fold;
 
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................SORT.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct sort_fn
+{
+    template <
+        std::random_access_iterator I, std::sentinel_for<I> S,
+        typename Comp = less_fn, typename Proj = identity_fn
+    >
+    constexpr static auto operator()(I first, S last, Comp compare = {}, Proj projection = {}) -> decltype(auto)
+    {
+        return std::ranges::sort(std::move(first), std::move(last), std::move(compare), std::move(projection));
+    }
+
+    template <
+        std::ranges::random_access_range Rng,
+        typename Comp = less_fn, typename Proj = identity_fn
+    >
+    constexpr static auto operator()(Rng && rng, Comp compare = {}, Proj projection = {}) -> decltype(auto)
+    {
+        auto && result = CB_FWD(rng);
+        std::ranges::sort(rng, std::move(compare), std::move(projection));
+        return result;
+    }
+
+
+    // Partial applicator and pipe launcher
+    template <typename Comp = less_fn, typename Proj = identity_fn>
+        requires (not std::ranges::input_range<Comp>)
+    constexpr static auto operator()(Comp compare = {}, Proj projection = {}) noexcept
+    {
+        if constexpr (std::is_empty_v<std::remove_cvref_t<Comp>> and std::is_empty_v<std::remove_cvref_t<Proj>>) {
+            return action_capture<sort_fn, Comp, Proj, void>{};
+        } else {
+            return action_capture<sort_fn, Comp, Proj, void>{std::move(compare), std::move(projection)};
+        }
+    }
+};
+
+constexpr inline sort_fn sort;
+
+static_assert(sort(std::array{3,2,1}) == std::array{1,2,3});
 }  // namespace callables
 
+#include "detail/_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_ACTIONS_HPP */
