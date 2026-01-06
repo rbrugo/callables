@@ -50,6 +50,7 @@ namespace callables
 // apply
 // compose         : combinators
 // on              : combinators
+// flip            : combinators
 // construct
 // get             :  access   ?
 // at              :  access   ?

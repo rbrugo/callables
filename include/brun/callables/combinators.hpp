@@ -14,6 +14,11 @@
 #include "detail/_config_begin.hpp"
 namespace callables
 {
+
+// compose
+// on
+// flip
+
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -179,6 +184,61 @@ static_assert(on(len)(lt).left("ciao"sv)("hello"sv));
 static_assert(on(len)(gt).right("ciao"sv)("hello"sv));
 }  // namespace _test
 #endif
+
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................FLIP.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct flip_fn
+{
+    template <typename Fn, typename ...Args>
+        requires (sizeof...(Args) > 0)
+    [[nodiscard]] constexpr
+    CB_STATIC auto operator()(Fn && fn, Args &&... args) CB_CONST -> decltype(auto)
+    {
+        return [fn=CB_FWD(fn),tp=std::forward_as_tuple(args...)]<std::size_t ...Idx>(std::index_sequence<Idx...>) mutable {
+            return CB_FWD(fn)(std::get<sizeof...(Args) - Idx - 1>(tp)...);
+        }(std::make_index_sequence<sizeof...(Args)>{});
+    }
+
+    template <typename Fn>
+    struct capture
+    {
+        [[no_unique_address]] Fn _fn;
+
+        template <typename ...Args>
+        constexpr auto operator()(Args &&... args) const {
+            return flip_fn{}(_fn, CB_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+        requires std::is_empty_v<Fn>
+    struct capture<Fn>
+    {
+        template <typename ...Args>
+        constexpr auto operator()(Args &&... args) const {
+            return flip_fn{}(Fn{}, CB_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+    [[nodiscard]] constexpr
+    CB_STATIC auto operator()(Fn && fn) CB_CONST
+    {
+        if constexpr (std::is_empty_v<Fn>) {
+            return capture<Fn>{};
+        } else {
+            return capture<Fn>{CB_FWD(fn)};
+        }
+    }
+};
+
+constexpr inline flip_fn flip;
+
+static_assert(flip([](auto a, auto b) { return b; })(0, 1) == 0);
+static_assert(flip([](auto a, auto b, auto c) { return c; })(0, 1, 2) == 0);
+
 }  // namespace callables
 
 #include "detail/_config_end.hpp"  // IWYU pragma: export
