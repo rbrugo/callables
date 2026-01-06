@@ -46,6 +46,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `apply`
 - `compose`
 - `on`: applies a binary function over a unary function
+- `flip`: applies arguments in reversed order
 - `identity`
 - `decay_copy`
 - `addressof`
@@ -55,7 +56,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `get<N>`
 - `at(N)`, `at[N]`
 - `value_or`
-- `from_container(cont)`
+- `from_container(cont, N)`
 - `transform_at<N>`: applies the captured function to the nth element of the tuple
 
 ***Equality and ordering:***
@@ -75,6 +76,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 
 ***Math:***
 - `abs`
+- `between`
 
 ***Logical:***
 - `logical_and`
@@ -88,9 +90,11 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `ston` string-to-number, templated with number type, result policy (default: `use_exception`) and base (`10`)
 
 ***Range actions***
-- `fold`
+- `fold` (without projection support)
+- `sort`
 
 ***Result Policies***
+As for now, only `ston` uses result policies.
 - `policy::use_exception`: result will be returned as it is; in case of failure, an exception will be thrown
 - `policy::use_pair_with_errc`: result will be returned in a `pair<T, std::errc>`
 - `policy::use_optional`: result will be returned in an `optional<T>`, that will be empty in case of failure
