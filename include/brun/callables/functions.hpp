@@ -121,7 +121,7 @@ struct not_fn
 {
     template <typename Fn, typename ...Args>
         requires (std::invocable<Fn, Args...> and sizeof...(Args) >= 1)
-    constexpr CB_STATIC auto operator()(Fn && fn, Args &&... args)
+    constexpr CB_STATIC auto operator()(Fn && fn, Args &&... args) CB_CONST
     {
         return not CB_FWD(fn)(CB_FWD(args)...);
     }
@@ -216,7 +216,7 @@ struct at_fn
         storage_t indices;
 
         template <typename Obj>
-        constexpr auto operator()(Obj && obj) -> decltype(auto)
+        constexpr auto operator()(Obj && obj) const -> decltype(auto)
         {
             if constexpr (sizeof...(N) == 1) {
                 return at_fn{}(CB_FWD(obj), indices);
@@ -236,7 +236,7 @@ struct at_fn
         storage_t indices;
 
         template <typename Obj>
-        constexpr auto operator()(Obj && obj) -> decltype(auto)
+        constexpr auto operator()(Obj && obj) const -> decltype(auto)
         {
             if constexpr (sizeof...(N) == 1) {
                 return at_fn{}[CB_FWD(obj), indices];
