@@ -32,6 +32,7 @@
 #define CB_MATH_HPP
 
 #include "arithmetic.hpp"  // IWYU pragma: export
+#include "ordering.hpp"
 #include <cmath>
 
 #include "detail/_config_begin.hpp"
@@ -56,6 +57,41 @@ struct abs_fn
 };
 
 constexpr inline abs_fn abs;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................BETWEEN.................................. //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct between_fn
+{
+    template <typename Lower, typename Higher, typename Target>
+    constexpr CB_STATIC auto operator()(Lower && lower, Higher && higher, Target && target) CB_CONST noexcept
+    {
+        return less_equal(CB_FWD(lower), target) and less_equal(target, CB_FWD(higher));
+    }
+
+
+    template <typename Lower, typename Higher>
+    struct capture
+    {
+        Lower lo;
+        Higher hi;
+
+        template <typename T>
+        constexpr auto operator()(T && target) const {
+            return between_fn{}(lo, hi, CB_FWD(target));
+        }
+    };
+
+    template <typename Lower, typename Higher>
+    constexpr CB_STATIC auto operator()(Lower && lo, Higher && hi) CB_CONST noexcept
+    {
+        return capture<Lower, Higher>(CB_FWD(lo), CB_FWD(hi));
+    }
+};
+
+constexpr inline between_fn between;
+
+static_assert(between(1, 10)(5));
 }  // namespace callables
 
 #include "detail/_config_end.hpp"  // IWYU pragma: export
