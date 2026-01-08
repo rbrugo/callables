@@ -87,7 +87,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 ***Formatting***
 - `to_string`
 - `format<fmt>`, templated with a format string
-- `ston` string-to-number, templated with number type, result policy (default: `use_exception`) and base (`10`)
+- `ston<T, B, P>` string-to-number, templated with number type,  base (`10`) and result policy (default: `use_exception`)
 
 ***Range actions***
 - `fold` (without projection support)

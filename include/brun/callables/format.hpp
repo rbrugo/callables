@@ -56,7 +56,7 @@ namespace callables
 struct to_string_t
 {
     template <typename T>
-    static constexpr auto operator()(T const & t) -> std::string
+    [[nodiscard]] CB_STATIC constexpr auto operator()(T const & t) CB_CONST -> std::string
     { return std::format("{}", t); }
 
 };
@@ -87,9 +87,9 @@ fixed_string(const T (&str)[Capacity]) -> fixed_string<T, Size>;
 template <fixed_string Fmt>
 struct format_t
 {
-    template <typename T>
-    static constexpr auto operator()(T && t) {
-        return std::format(Fmt, std::forward<T>(t));
+    template <typename ...Ts>
+    [[nodiscard]] CB_STATIC constexpr auto operator()(Ts &&... ts) CB_CONST {
+        return std::format(Fmt, CB_FWD(ts)...);
     }
 };
 
@@ -122,7 +122,7 @@ struct use_exception
 struct use_pair_with_errc {
     template <typename T> using result_t = std::pair<T, std::errc>;
     template <typename T>
-    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t), std::errc()}))
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t<T>{CB_FWD(t), std::errc()}))
         -> result_t<T>
     {
         return result_t{CB_FWD(t), std::errc()};
@@ -138,7 +138,7 @@ struct use_pair_with_errc {
 struct use_optional {
     template <typename T> using result_t = std::optional<T>;
     template <typename T>
-    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t)}))
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t<T>{CB_FWD(t)}))
         -> result_t<T>
     {
         return std::optional{CB_FWD(t)};
@@ -154,7 +154,7 @@ struct use_expected {
 #if CB_HAS_EXPECTED == 1
     template <typename T> using result_t = std::expected<T, std::errc>;
     template <typename T>
-    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t{CB_FWD(t)}))
+    CB_STATIC constexpr auto make_result(T && t) CB_CONST noexcept(noexcept(result_t<T>{CB_FWD(t)}))
         -> result_t<T>
     {
         return std::expected<T, std::errc>{CB_FWD(t)};
@@ -171,38 +171,218 @@ struct use_expected {
 };
 }  // namespace policy
 
-template <typename Num, typename ResultPolicy, int Base>
+template <typename Num, int Base, typename ResultPolicy>
 struct ston_fn
 {
-    static_assert(Base >= 2 and Base <= 32, "the base must be included within [2,32]");
+    using number = std::remove_cvref_t<Num>;
+    using result_policy = ResultPolicy;
 
-    static constexpr auto use_exception = std::same_as<ResultPolicy, policy::use_exception>;
+    static constexpr auto use_exception = std::same_as<result_policy, policy::use_exception>;
+
+    template <typename T>
+    static constexpr auto make_result(T && t) {
+        return result_policy::template make_result<number>(std::move(t));
+    }
+
+    template <typename T>
+    static constexpr auto make_failure(T && t) noexcept(use_exception) {
+        return result_policy::template make_failure<number>(std::move(t));
+    }
+
+    static_assert(Base >= 2 and Base <= 32, "the base must be included within [2,32]");
+    static_assert(not std::is_floating_point_v<number> or Base == 10, "only base 10 is allowed for floating points");
+
 
     template <std::contiguous_iterator It, std::sentinel_for<It> Sent>
         requires (std::same_as<std::iter_value_t<It>, char>)
-    [[nodiscard]]
-    CB_STATIC constexpr
+    [[nodiscard]] CB_STATIC constexpr
     auto operator()(It && begin, Sent && end) noexcept(not use_exception)
     {
-        auto result = Num{};
-        auto [ptr, ec] = std::from_chars(std::to_address(begin), std::to_address(end), result, Base);
-        if (ec == std::errc()) {
-            return ResultPolicy::make_result(result);
+        auto result = number{};
+        auto ptr = static_cast<char const *>(nullptr);
+        auto ec = std::errc();
+        if constexpr (std::is_floating_point_v<number>) {
+            auto [ptr_, ec_] = std::from_chars(std::to_address(begin), std::to_address(end), result);
+            std::tie(ptr, ec) = std::tie(ptr_, ec_);
+        } else {
+            auto [ptr_, ec_] = std::from_chars(std::to_address(begin), std::to_address(end), result, Base);
+            std::tie(ptr, ec) = std::tie(ptr_, ec_);
         }
-        return ResultPolicy::template make_failure<Num>(ec);
+        if (ec == std::errc()) {
+            if (ptr != end) {
+                return make_failure(std::errc::invalid_argument);
+            }
+            return make_result(result);
+        }
+        return make_failure(ec);
     }
 
-    template <std::ranges::contiguous_range Rng>
+    // Basically copying the implementation from GCC's <charconv>
+    template <std::input_iterator It, std::sentinel_for<It> Sent>
+        requires (std::same_as<std::iter_value_t<It>, char> and not std::floating_point<number>)
+    [[nodiscard]] CB_STATIC constexpr
+    auto _impl(It && begin, Sent && end) noexcept(not use_exception)
+    {
+        if (begin == end) {
+            return number{};
+        }
+
+        constexpr auto raise_and_add = [](std::make_unsigned_t<number> res, auto val) -> std::optional<number> {
+            auto result = res * Base + val;
+            static_assert(std::is_unsigned_v<std::remove_cvref_t<decltype(result)>>);
+
+            if (std::cmp_less_equal(result, std::numeric_limits<number>::max())) {
+                return {result};
+            }
+            return std::nullopt;
+        };
+
+        constexpr auto read = [](char ch) {
+            if constexpr (Base <= 10) {
+                return ch - '0';
+            } else {
+                // TODO: this constructor should be independent of the `Base`
+                constexpr auto table = []()  {
+                    constexpr auto lower = std::views::iota('a', 'z');
+                    constexpr auto upper = std::views::iota('A', 'Z');
+                    auto tmp = std::array<uint8_t, 1 << 8>{};
+                    std::ranges::fill(tmp, 127);
+                    for (int i = 0; i < 10; ++i) {
+                        tmp['0' + i] = i;
+                    }
+                    for (int i = 0; i < 26; ++i) {
+                        tmp[lower[i]] = 10 + i;
+                        tmp[upper[i]] = 10 + i;
+                    }
+                    return tmp;
+                }();
+                static_assert(table['a'] == 3);
+                return table[ch];
+            }
+        };
+
+        auto sign = 1;
+        auto res = number{};
+
+        if constexpr (std::is_signed_v<number>) {
+            do {
+                auto first = *begin++;
+                if (first == '\0') {
+                    continue;
+                }
+                if (first == '-') {
+                    sign = -1;
+                } else {
+                    auto tmp = read(first);
+                    if (tmp >= Base) {
+                        return make_failure(std::errc::invalid_argument);
+                    }
+                    res = tmp;
+                }
+                break;
+            } while (true);
+        }
+        constexpr auto bits_per_digit = std::bit_width(unsigned(Base & 0x3f));
+        auto unused_bits_lower_bound = std::numeric_limits<number>::digits;
+        while (begin != end) {
+            auto val = read(*begin++);
+            if (val >= Base) {
+                return make_failure(std::errc::invalid_argument);
+            }
+
+            unused_bits_lower_bound -= bits_per_digit;
+            if (unused_bits_lower_bound >= 0) [[likely]] {
+                res = res * Base + val;
+            } else if (auto res_ = raise_and_add(res, val); res_.has_value()) {
+                res = *res_;
+            } else {
+                return make_failure(std::errc::result_out_of_range);
+            }
+        }
+        return make_result(res * sign);
+    }
+
+    template <std::input_iterator It, std::sentinel_for<It> Sent>
+        requires (std::same_as<std::iter_value_t<It>, char> and std::floating_point<number>)
+    [[nodiscard]] CB_STATIC constexpr
+    auto _impl(It && begin, Sent && end) noexcept(not use_exception)
+    {
+        if (begin == end) {
+            return number{};
+        }
+
+        auto sign = 1;
+        auto res = number{};
+        auto decimal = std::optional<number>{};
+
+        do {
+            auto first = *begin++;
+            if (first == '\0') {
+                continue;
+            }
+            if (first == '-') {
+                sign = -1;
+            } else if (first == '.') {
+                decimal = 1. / Base;
+            } else {
+                res = first - '0';
+            }
+            break;
+        } while (true);
+
+        while (begin != end) {
+            auto tmp = *begin++;
+            if (tmp == '.' and not decimal) {
+                decimal = 1. / Base;
+                continue;
+            }
+            auto val = tmp - '0';
+            if (not decimal) {
+                res = res * Base + val;
+            } else {
+                res = res + *decimal * val;
+                *decimal = *decimal / Base;
+            }
+        }
+
+        return make_result(res * sign);
+    }
+
+
+    template <std::input_iterator It, std::sentinel_for<It> Sent>
+        requires (std::same_as<std::iter_value_t<It>, char>)
+    [[nodiscard]] CB_STATIC constexpr
+    auto operator()(It && begin, Sent && end) noexcept(not use_exception)
+    {
+        return _impl(CB_FWD(begin), CB_FWD(end));
+    }
+
+
+
+    template <std::ranges::input_range Rng>
         requires (std::same_as<std::ranges::range_value_t<Rng>, char>)
     [[nodiscard]]
     CB_STATIC constexpr auto operator()(Rng && rng) noexcept(not use_exception)
     {
         return operator()(std::ranges::begin(rng), std::ranges::end(rng));
     }
+
+    [[nodiscard]]
+    CB_STATIC constexpr auto operator()(char const * str) {
+        return operator()(std::string_view{str});
+    }
 };
 
-template <typename Num, typename Policy = policy::use_exception, int Base = 10>
-constexpr inline ston_fn<Num, Policy, Base> ston;
+template <typename Num, int Base = 10, typename Policy = policy::use_exception>
+constexpr inline ston_fn<Num, Base, Policy> ston;
+
+#if defined CB_TESTING_ON || defined CB_TESTING_FORMAT
+static_assert(ston<int>("155") == 155);
+static_assert(ston<int, 16, policy::use_exception>(std::string_view{"A"}) == 10);
+static_assert(ston<int>("12345678" | std::views::reverse) == 87654321);
+static_assert(ston<int, 16>("ABC" | std::views::reverse) == 0xCBA);
+static_assert(std::abs(ston<double>("123.456-" | std::views::reverse) - -654.321) < 0.0000001);
+#endif  // CB_TESTING_ON || defined CB_TESTING_FORMAT
 
 } // namespace callables
 
