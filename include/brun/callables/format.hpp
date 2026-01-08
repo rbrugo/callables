@@ -209,7 +209,7 @@ struct ston_fn
             std::tie(ptr, ec) = std::tie(ptr_, ec_);
         }
         if (ec == std::errc()) {
-            if (ptr != end) {
+            if (ptr != std::to_address(end)) {
                 return make_failure(std::errc::invalid_argument);
             }
             return make_result(result);
