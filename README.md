@@ -47,6 +47,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `compose`
 - `on`: applies a binary function over a unary function
 - `flip`: applies arguments in reversed order
+- `curry`: make a _Callable_ curriable once for any number of arguments
 - `identity`
 - `decay_copy`
 - `addressof`
