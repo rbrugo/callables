@@ -18,6 +18,7 @@ namespace callables
 // compose
 // on
 // flip
+// curry
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
@@ -217,7 +218,7 @@ struct flip_fn
     struct capture<Fn>
     {
         template <typename ...Args>
-        constexpr auto operator()(Args &&... args) const {
+        constexpr CB_STATIC auto operator()(Args &&... args) CB_CONST {
             return flip_fn{}(Fn{}, CB_FWD(args)...);
         }
     };
@@ -238,6 +239,102 @@ constexpr inline flip_fn flip;
 
 static_assert(flip([](auto a, auto b) { return b; })(0, 1) == 0);
 static_assert(flip([](auto a, auto b, auto c) { return c; })(0, 1, 2) == 0);
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................CURRY.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct curry_fn
+{
+    template <typename Fn, typename ...Binded>
+    struct curried {
+        [[no_unique_address]] Fn _fn;
+        [[no_unique_address]] std::tuple<Binded...> _binded_args;
+
+        template <typename ...Args>
+            requires std::invocable<Fn, Binded..., Args...>
+        constexpr auto operator()(Args &&... call_args) const & noexcept(std::is_nothrow_invocable_v<Fn, Binded..., Args...>)
+            -> std::invoke_result_t<Fn, Binded..., Args...>
+        {
+            return _call(*this, std::index_sequence_for<Binded...>(), CB_FWD(call_args)...);
+        }
+
+        template <typename ...Args>
+            requires std::invocable<Fn, Binded..., Args...>
+        constexpr auto operator()(Args &&... call_args) && noexcept(std::is_nothrow_invocable_v<Fn, Binded..., Args...>)
+            -> std::invoke_result_t<Fn, Binded..., Args...>
+        {
+            return _call(std::move(*this), std::index_sequence_for<Binded...>(), CB_FWD(call_args)...);
+        }
+
+        template <typename Self, typename ...Args, std::size_t ...Idxs>
+        static constexpr auto _call(Self && self, std::index_sequence<Idxs...>, Args &&... args)
+        {
+            return CB_FWD(self)._fn(std::get<Idxs>(CB_FWD(self)._binded_args)..., CB_FWD(args)...);
+        }
+    };
+
+    template <typename Fn>
+    struct curriable {
+        [[no_unique_address]] Fn _fn;
+
+        template <typename ...BindedArgs>
+        constexpr auto operator()(BindedArgs &&... binded_args) const &
+        {
+            return curried<Fn, std::decay_t<BindedArgs>...>(_fn, {CB_FWD(binded_args)...});
+        }
+
+        template <typename ...BindedArgs>
+        constexpr auto operator()(BindedArgs &&... binded_args) &&
+        {
+            return curried<Fn, std::decay_t<BindedArgs>...>(std::move(_fn), {CB_FWD(binded_args)...});
+        }
+    };
+
+    template <typename Fn, typename ...Args>
+    constexpr CB_STATIC
+    auto operator()(Fn && fn, Args &&... binded_args) CB_CONST
+    {
+        if constexpr (sizeof...(Args) == 0) {
+            return curriable<std::decay_t<Fn>>(CB_FWD(fn));
+        } else {
+            return curried<std::decay_t<Fn>, std::decay_t<Args>...>(CB_FWD(fn), {CB_FWD(binded_args)...});
+        }
+    }
+
+    template <typename Fn, typename ...BindedArgs, typename ...Args>
+    constexpr CB_STATIC
+    auto operator()(curried<Fn, BindedArgs...> const & fn, Args &&... new_args) CB_CONST
+    {
+        if constexpr (sizeof...(Args) == 0) {
+            return curriable<curried<Fn, BindedArgs...>>(fn);
+        } else {
+            return curried<Fn, BindedArgs..., std::decay_t<Args>...>(
+                fn._fn, std::tuple_cat(fn._binded_args, std::forward_as_tuple<Args...>(new_args...))
+            );
+        }
+    }
+
+    template <typename Fn, typename ...BindedArgs, typename ...Args>
+    constexpr CB_STATIC
+    auto operator()(curried<Fn, BindedArgs...> && fn, Args &&... new_args) CB_CONST
+    {
+        if constexpr (sizeof...(Args) == 0) {
+            return curriable<curried<Fn, BindedArgs...>>(std::move(fn));
+        } else {
+            return curried<Fn, BindedArgs..., Args...>(
+                std::move(fn)._fn, std::tuple_cat(std::move(fn)._binded_args, std::forward_as_tuple(new_args...))
+            );
+        }
+    }
+};
+
+constexpr inline curry_fn curry;
+
+#if defined CB_TESTING_CURRY
+constexpr auto test_fn = [](auto a, auto b, auto c) { return a + b + c; };
+static_assert(curry(test_fn)(1, 2, 3)() == 6);
+static_assert(curry(test_fn, 1)(2, 3) == 6);
+#endif
 
 }  // namespace callables
 

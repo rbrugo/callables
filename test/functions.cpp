@@ -45,6 +45,28 @@ int main()
     using namespace boost::ut;
     using namespace boost::ut::operators::terse;
 
+    "curry_fn"_test = [] {
+        using callables::curry;
+        auto [sum, sum_expr] = DECLARE(([](int a, int b) { return a + b;}));
+        auto [prod, prod_expr] = DECLARE(([](auto ...n) { return (n * ...); }));
+        should("bind_front if any argument is passed with the callable to lift") = [&] {
+            expect(curry(sum, 1)(2) == 3_i) << sum_expr << "curried with arg 1, then 2";
+            expect(curry(sum, 1, 2)() == 3_i) << sum_expr << "curried with arg 1 and 2, then ()";
+        };
+        should("make the function curriable for any number of args, one time per application") = [&] {
+            auto curriable_sum = curry(sum);
+            expect(curriable_sum(1)(2) == 3_i) << sum_expr << "with argument 1 and then 2";
+            expect(curriable_sum(1, 2)() == 3_i) << sum_expr << "with arguments 1, 2 and then ()";
+
+            auto curriable_prod = curry(prod);
+            auto twice = curry(curriable_prod);
+            expect(curriable_prod(2)(2) == 4_i) << prod_expr << "with argument 2 and then 2";
+            expect(twice(2)(2)(3) == 12_i) << prod_expr << "curried trice with arg 2, then 2, then 3";
+            auto beast = curry(curry(curriable_prod, 1), 2);
+            expect(beast(3)(4) == 24_i) << prod_expr << "mixed compositions of curries";
+        };
+    };
+
     "apply_fn"_test = [] {
         using callables::apply;
         auto [sum, sum_expr] = DECLARE(([](int a, int b) { return a + b;}));

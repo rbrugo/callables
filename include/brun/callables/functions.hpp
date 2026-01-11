@@ -51,6 +51,7 @@ namespace callables
 // compose         : combinators
 // on              : combinators
 // flip            : combinators
+// curry           : combinators
 // construct
 // get             :  access   ?
 // at              :  access   ?
