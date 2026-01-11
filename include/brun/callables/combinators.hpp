@@ -288,22 +288,14 @@ struct curry_fn
     {
         if constexpr (sizeof...(Args) == 0) {
             return curriable<std::decay_t<Fn>>(CB_FWD(fn));
+        } else if constexpr (curried_instance<Fn>) {
+            return typename Fn::template append_t<std::decay_t<Args>...>(
+                CB_FWD(fn)._fn, std::tuple_cat(
+                    CB_FWD(fn)._binded_args, std::forward_as_tuple(binded_args...)
+                )
+            );
         } else {
             return curried<std::decay_t<Fn>, std::decay_t<Args>...>(CB_FWD(fn), {CB_FWD(binded_args)...});
-        }
-    }
-
-    template <typename Curried, typename ...Args>
-        requires curried_instance<Curried>
-    constexpr CB_STATIC
-    auto operator()(Curried && fn, Args &&... new_args) CB_CONST
-    {
-        if constexpr (sizeof...(Args) == 0) {
-            return curriable<Curried>(CB_FWD(fn));
-        } else {
-            return typename Curried::template append_t<std::decay_t<Args>...>(
-                CB_FWD(fn)._fn, std::tuple_cat(CB_FWD(fn)._binded_args, std::forward_as_tuple(new_args...))
-            );
         }
     }
 };
