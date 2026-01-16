@@ -54,6 +54,7 @@ namespace callables
 // curry           : combinators
 // construct
 // get             :  access   ?
+// front           :  access   ?
 // at              :  access   ?
 // from_container  :  access   ?
 // addressof
@@ -202,6 +203,20 @@ struct get_fn
 template <std::size_t N>
 constexpr inline get_fn<N> get;
 
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................FRONT.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct front_fn
+{
+    template <std::ranges::input_range Rng>
+    CB_STATIC constexpr
+    auto operator()(Rng && rng) CB_CONST
+    {
+        return *std::ranges::begin(CB_FWD(rng));
+    }
+};
+
+constexpr inline front_fn front;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .....................................AT..................................... //
