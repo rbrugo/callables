@@ -46,7 +46,7 @@ namespace callables
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................PLUS.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct plus_fn : public binary_fn<plus_fn>, applicable_on_tuples<plus_fn>
+struct plus_fn : public binary_fn, applicable_on_tuples<plus_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) + CB_FWD(u); }
@@ -55,7 +55,7 @@ struct plus_fn : public binary_fn<plus_fn>, applicable_on_tuples<plus_fn>
         -> decltype(auto)
     { return CB_FWD(t) + CB_FWD(u); }
 
-    using binary_fn<plus_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline plus_fn plus;
@@ -63,7 +63,7 @@ constexpr inline plus_fn plus;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................MINUS.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct minus_fn : public binary_fn<minus_fn>, applicable_on_tuples<minus_fn>
+struct minus_fn : public binary_fn, applicable_on_tuples<minus_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) - CB_FWD(u); }
@@ -72,7 +72,7 @@ struct minus_fn : public binary_fn<minus_fn>, applicable_on_tuples<minus_fn>
         -> decltype(auto)
     { return CB_FWD(t) - CB_FWD(u); }
 
-    using binary_fn<minus_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline minus_fn minus;
@@ -80,7 +80,7 @@ constexpr inline minus_fn minus;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .................................MULTIPLIES................................. //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct multiplies_fn : public binary_fn<multiplies_fn>, applicable_on_tuples<multiplies_fn>
+struct multiplies_fn : public binary_fn, applicable_on_tuples<multiplies_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) * CB_FWD(u); }
@@ -89,7 +89,7 @@ struct multiplies_fn : public binary_fn<multiplies_fn>, applicable_on_tuples<mul
         -> decltype(auto)
     { return CB_FWD(t) * CB_FWD(u); }
 
-    using binary_fn<multiplies_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline multiplies_fn multiplies;
@@ -97,7 +97,7 @@ constexpr inline multiplies_fn multiplies;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................DIVIDES................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct divides_fn : public binary_fn<divides_fn>, applicable_on_tuples<divides_fn>
+struct divides_fn : public binary_fn, applicable_on_tuples<divides_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) / CB_FWD(u); }
@@ -106,7 +106,7 @@ struct divides_fn : public binary_fn<divides_fn>, applicable_on_tuples<divides_f
         -> decltype(auto)
     { return CB_FWD(t) / CB_FWD(u); }
 
-    using binary_fn<divides_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline divides_fn divides;

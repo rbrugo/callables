@@ -39,7 +39,7 @@ namespace callables
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................AND..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct logical_and_fn : public binary_fn<logical_and_fn>, applicable_on_tuples<logical_and_fn>
+struct logical_and_fn : public binary_fn, applicable_on_tuples<logical_and_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) and CB_FWD(u); }
@@ -56,7 +56,7 @@ constexpr inline logical_and_fn logical_and;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .....................................OR..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct logical_or_fn : public binary_fn<logical_or_fn>, applicable_on_tuples<logical_or_fn>
+struct logical_or_fn : public binary_fn, applicable_on_tuples<logical_or_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) or CB_FWD(u); }
@@ -73,7 +73,7 @@ constexpr inline logical_or_fn logical_or;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // .....................................XOR.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct logical_xor_fn : public binary_fn<logical_xor_fn>, applicable_on_tuples<logical_xor_fn>
+struct logical_xor_fn : public binary_fn, applicable_on_tuples<logical_xor_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) xor CB_FWD(u); }

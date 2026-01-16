@@ -59,7 +59,7 @@ struct equal_to_fn : public compare_operator<equal_to_fn>
         }
     }
 
-    using compare_operator<equal_to_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline equal_to_fn equal_to;
@@ -82,7 +82,7 @@ struct not_equal_to_fn : public compare_operator<not_equal_to_fn>
         }
     }
 
-    using compare_operator<not_equal_to_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline not_equal_to_fn not_equal_to;

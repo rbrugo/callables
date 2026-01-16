@@ -44,7 +44,7 @@ namespace callables
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_and................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct bit_and_fn : public binary_fn<bit_and_fn>, applicable_on_tuples<bit_and_fn>
+struct bit_and_fn : public binary_fn, applicable_on_tuples<bit_and_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) & CB_FWD(u); }
@@ -53,7 +53,7 @@ struct bit_and_fn : public binary_fn<bit_and_fn>, applicable_on_tuples<bit_and_f
         -> decltype(auto)
     { return CB_FWD(t) & CB_FWD(u); }
 
-    using binary_fn<bit_and_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline bit_and_fn bit_and;
@@ -61,7 +61,7 @@ constexpr inline bit_and_fn bit_and;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_or.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct bit_or_fn : public binary_fn<bit_or_fn>, applicable_on_tuples<bit_or_fn>
+struct bit_or_fn : public binary_fn, applicable_on_tuples<bit_or_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) | CB_FWD(u); }
@@ -70,7 +70,7 @@ struct bit_or_fn : public binary_fn<bit_or_fn>, applicable_on_tuples<bit_or_fn>
         -> decltype(auto)
     { return CB_FWD(t) | CB_FWD(u); }
 
-    using binary_fn<bit_or_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline bit_or_fn bit_or;
@@ -78,7 +78,7 @@ constexpr inline bit_or_fn bit_or;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................bit_xor................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct bit_xor_fn : public binary_fn<bit_xor_fn>, applicable_on_tuples<bit_xor_fn>
+struct bit_xor_fn : public binary_fn, applicable_on_tuples<bit_xor_fn>
 {
     template <typename T, typename U>
         requires requires(T && t, U && u) { CB_FWD(t) ^ CB_FWD(u); }
@@ -87,7 +87,7 @@ struct bit_xor_fn : public binary_fn<bit_xor_fn>, applicable_on_tuples<bit_xor_f
         -> decltype(auto)
     { return CB_FWD(t) ^ CB_FWD(u); }
 
-    using binary_fn<bit_xor_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline bit_xor_fn bit_xor;

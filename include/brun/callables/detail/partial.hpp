@@ -98,26 +98,26 @@ public:
     { return Fn{}(CB_FWD(u)..., _t); }
 };
 
-template <typename Base>
 struct binary_fn
 {
-    using base = Base;
     using is_transparent = void;
 
-    template <typename T>
+    template <typename Self, typename T>
     [[nodiscard]] constexpr
-    static auto left(T && t) noexcept(noexcept(partial<base, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}))
-    { return partial<base, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}; }
+    auto left(this Self const &, T && t) noexcept(noexcept(partial<Self, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}))
+    {
+        return partial<Self, std::unwrap_ref_decay_t<T>>{CB_FWD(t)};
+    }
 
-    template <typename T>
+    template <typename Self, typename T>
     [[nodiscard]] constexpr
-    static auto right(T && t) noexcept(noexcept(right_partial<base, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}))
-    { return right_partial<base, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}; }
+    auto right(this Self const &, T && t) noexcept(noexcept(right_partial<Self, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}))
+    { return right_partial<Self, std::unwrap_ref_decay_t<T>>{CB_FWD(t)}; }
 
-    template <typename T>
-    [[nodiscard]] constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(left(CB_FWD(t))))
-    { return left(CB_FWD(t)); }
+    template <typename Self, typename T>
+    [[nodiscard]] constexpr
+    auto operator()(this Self const & self, T && t) noexcept(noexcept(self.left(CB_FWD(t))))
+    { return self.left(CB_FWD(t)); }
 };
 
 template <typename Base>
@@ -125,8 +125,8 @@ struct compare_tuple_fn
 {
     template <typename Tuple>
         requires (detail::tuple_size<Tuple> > 1)
-    [[nodiscard]] constexpr CB_STATIC
-    auto operator()(Tuple && p) CB_CONST -> decltype(auto)
+    [[nodiscard]] constexpr static
+    auto operator()(Tuple && p) -> decltype(auto)
     {
         return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
             return (Base{}(CB_FWD_LIKE(p, get<I>(p)), CB_FWD_LIKE(p, get<I + 1>(p))) and ...);
@@ -135,14 +135,13 @@ struct compare_tuple_fn
 };
 
 template <typename Base>
-struct compare_operator : public binary_fn<Base>
+struct compare_operator : public binary_fn
 {
-    // using binary_fn<Base>::operator();
-    using binary_fn<Base>::right;
-    template <typename T>
-    [[nodiscard]] constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept(noexcept(right(CB_FWD(t))))
-    { return right(CB_FWD(t)); }
+    using binary_fn::right;
+    template <typename Self, typename T>
+    [[nodiscard]] constexpr
+    auto operator()(this Self const & self, T && t) noexcept(noexcept(self.right(CB_FWD(t))))
+    { return self.right(CB_FWD(t)); }
     [[no_unique_address]] compare_tuple_fn<Base> tuple;
 };
 
@@ -151,9 +150,8 @@ struct recursive_tuple_fn
 {
     template <typename Tuple>
         requires (detail::tuple_size<Tuple> > 0)
-    [[nodiscard]]
-    constexpr CB_STATIC
-    auto operator()(Tuple && p) CB_CONST -> decltype(auto)
+    [[nodiscard]] constexpr static
+    auto operator()(Tuple && p) -> decltype(auto)
     {
         return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
             return (Base{}(CB_FWD_LIKE(p, get<I>(p))...));

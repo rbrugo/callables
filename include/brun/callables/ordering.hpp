@@ -60,7 +60,7 @@ struct less_fn : public compare_operator<less_fn>
         }
     }
 
-    using compare_operator<less_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline less_fn less_than;
@@ -83,7 +83,7 @@ struct less_equal_fn : public compare_operator<less_equal_fn>
         }
     }
 
-    using compare_operator<less_equal_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline less_equal_fn less_equal;
@@ -106,7 +106,7 @@ struct greater_fn : public compare_operator<greater_fn>
         }
     }
 
-    using compare_operator<greater_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline greater_fn greater_than;
@@ -129,7 +129,7 @@ struct greater_equal_fn : public compare_operator<greater_equal_fn>
         }
     }
 
-    using compare_operator<greater_equal_fn>::operator();
+    using compare_operator::operator();
 };
 
 constexpr inline greater_equal_fn greater_equal;

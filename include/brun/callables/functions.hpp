@@ -66,7 +66,7 @@ namespace callables
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct apply_fn : public binary_fn<apply_fn>
+struct apply_fn : public binary_fn
 {
     template <typename Fn, typename Tuple>
         requires detail::direct_applicable<Fn, Tuple>
@@ -84,7 +84,7 @@ struct apply_fn : public binary_fn<apply_fn>
         -> decltype(auto)
     { return CB_FWD(obj).apply(CB_FWD(fn)); }
 
-    using binary_fn<apply_fn>::operator();
+    using binary_fn::operator();
 };
 
 constexpr inline apply_fn apply;

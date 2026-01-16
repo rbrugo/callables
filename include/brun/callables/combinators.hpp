@@ -96,7 +96,7 @@ static_assert(compose([](auto c) { return c - 'z'; }, [](auto c) { return c + 'z
 struct on_fn
 {
     template <typename UnaryFn, typename BinaryFn>
-    struct inner : public binary_fn<inner<UnaryFn, BinaryFn>>, applicable_on_tuples<inner<UnaryFn, BinaryFn>>
+    struct inner : public binary_fn, applicable_on_tuples<inner<UnaryFn, BinaryFn>>
     {
         [[no_unique_address]] UnaryFn _un;
         [[no_unique_address]] BinaryFn _bin;
@@ -123,10 +123,6 @@ struct on_fn
         }
 
         using inner::binary_fn::operator();
-        // template <typename Arg>
-        // constexpr auto operator()(Arg && arg) {
-        //     return partial<on_fn::inner
-        // }
     };
 
     template <typename UnaryFn>
