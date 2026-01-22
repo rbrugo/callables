@@ -76,7 +76,7 @@ constexpr inline compose_fn compose;
 
 namespace operators
 {
-template <typename LeftFn, typename RightFn>
+template <detail::callable LeftFn, detail::callable RightFn>
 [[nodiscard]] constexpr auto operator*(LeftFn && lhs, RightFn && rhs)
 {
     return compose(CB_FWD(lhs), CB_FWD(rhs));
@@ -124,10 +124,6 @@ struct on_fn
         }
 
         using inner::binary_fn::operator();
-        // template <typename Arg>
-        // constexpr auto operator()(Arg && arg) {
-        //     return partial<on_fn::inner
-        // }
     };
 
     template <typename UnaryFn>
@@ -339,6 +335,7 @@ constexpr inline apply_fn apply;
 namespace operators
 {
 template <typename Fn>
+    requires detail::callable<Fn>
 [[nodiscard]] constexpr auto operator+(Fn && fn)
 {
     return apply(CB_FWD(fn));

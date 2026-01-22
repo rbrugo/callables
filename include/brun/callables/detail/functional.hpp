@@ -33,10 +33,14 @@
 
 #include <concepts>
 
+#if CB_HAS_REFLECTION != 0
+#include <meta>
+#endif
+
+#include "_config_begin.hpp"
+
 namespace callables::detail
 {
-
-#define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 template <typename T1, typename ...Pack1>
 struct pairwise_constructible
@@ -82,8 +86,28 @@ concept character = std::same_as<char, T>
 template <typename T>
 concept numeric = std::integral<T> and not std::same_as<bool, T> and not character<T>;
 
-#undef CB_FWD
+#if CB_HAS_REFLECTION != 0
+template <typename T>
+consteval auto has_call_operator()
+{
+    constexpr auto ctx = std::meta::access_context::current();
+
+    for (auto member : std::meta::members_of(^^T, ctx)) {
+        if (is_operator_function(member) or is_operator_function_template(member)) {
+            if (operator_of(member) == std::meta::op_parentheses) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+template <typename T> concept callable = has_call_operator<std::decay_t<T>>;
+#else
+template <typename T> concept callable = true; // sigh
+#endif
 
 } // namespace callables::detail
 
+#include "_config_end.hpp"  // IWYU pragma: export
 #endif /* CB_DETAIL_FUNCTIONAL_HPP */

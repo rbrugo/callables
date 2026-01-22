@@ -60,6 +60,13 @@
 #define CB_HAS_MD_SUBSCRIPT 0
 #endif
 
+
+#if defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L
+#define CB_HAS_REFLECTION 1
+#else
+#define CB_HAS_REFLECTION 0
+#endif
+
 #define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 #endif /* CB_DETAIL_CONFIG_BEGIN_HPP */
