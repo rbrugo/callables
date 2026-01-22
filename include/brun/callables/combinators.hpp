@@ -77,7 +77,7 @@ constexpr inline compose_fn compose;
 namespace operators
 {
 template <typename LeftFn, typename RightFn>
-auto operator*(LeftFn && lhs, RightFn && rhs)
+[[nodiscard]] constexpr auto operator*(LeftFn && lhs, RightFn && rhs)
 {
     return compose(CB_FWD(lhs), CB_FWD(rhs));
 }
@@ -335,6 +335,28 @@ struct apply_fn : public binary_fn<apply_fn>
 };
 
 constexpr inline apply_fn apply;
+
+namespace operators
+{
+template <typename Fn>
+[[nodiscard]] constexpr auto operator+(Fn && fn)
+{
+    return apply(CB_FWD(fn));
+}
+}  // namespace operators
+
+#if defined CB_TESTING_APPLY_OPERATOR
+namespace _test
+{
+using operators::operator+;
+constexpr inline auto λ = [](auto n) { return n; };
+constexpr inline auto sa = +λ;
+constexpr inline auto sb = apply(λ);
+static_assert(std::same_as<decltype(sa), decltype(sb)>);
+constexpr inline auto apply2 = +apply;
+}  // namespace test
+#endif  // CB_TESTING_APPLY_OPERATOR
+
 }  // namespace callables
 
 #include "detail/_config_end.hpp"  // IWYU pragma: export
