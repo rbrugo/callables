@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <tuple>
 #include "detail/partial.hpp"
+#include "detail/functional.hpp"
 
 #include "detail/_config_begin.hpp"
 namespace callables
@@ -308,6 +309,32 @@ static_assert(curry(test_fn)(1, 2, 3)() == 6);
 static_assert(curry(test_fn, 1)(2, 3) == 6);
 #endif
 
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................APPLY.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct apply_fn : public binary_fn<apply_fn>
+{
+    template <typename Fn, typename Tuple>
+        requires detail::direct_applicable<Fn, Tuple>
+    constexpr CB_STATIC
+    auto operator()(Fn && fn, Tuple && args) CB_CONST
+        noexcept(noexcept(apply(CB_FWD(fn), CB_FWD(args))))
+        -> decltype(auto)
+    { return apply(CB_FWD(fn), CB_FWD(args)); }
+
+    template <typename Fn, typename T>
+        requires detail::has_member_apply_with<T, Fn>
+    constexpr CB_STATIC
+    auto operator()(Fn && fn, T && obj) CB_CONST
+        noexcept(noexcept(CB_FWD(obj).apply(CB_FWD(fn))))
+        -> decltype(auto)
+    { return CB_FWD(obj).apply(CB_FWD(fn)); }
+
+    using binary_fn::operator();
+};
+
+constexpr inline apply_fn apply;
 }  // namespace callables
 
 #include "detail/_config_end.hpp"  // IWYU pragma: export
