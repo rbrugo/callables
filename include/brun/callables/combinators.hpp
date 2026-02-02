@@ -309,26 +309,80 @@ static_assert(curry(test_fn, 1)(2, 3) == 6);
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................APPLY.................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-struct apply_fn : public binary_fn<apply_fn>
+namespace detail
 {
-    template <typename Fn, typename Tuple>
-        requires detail::direct_applicable<Fn, Tuple>
-    constexpr CB_STATIC
-    auto operator()(Fn && fn, Tuple && args) CB_CONST
-        noexcept(noexcept(apply(CB_FWD(fn), CB_FWD(args))))
-        -> decltype(auto)
-    { return apply(CB_FWD(fn), CB_FWD(args)); }
 
-    template <typename Fn, typename T>
-        requires detail::has_member_apply_with<T, Fn>
-    constexpr CB_STATIC
-    auto operator()(Fn && fn, T && obj) CB_CONST
-        noexcept(noexcept(CB_FWD(obj).apply(CB_FWD(fn))))
-        -> decltype(auto)
-    { return CB_FWD(obj).apply(CB_FWD(fn)); }
+template <typename Fn, typename Tuple, std::size_t ...Idx>
+constexpr static
+auto default_apply(Fn && fn, Tuple && tuple, std::index_sequence<Idx...>) -> decltype(auto)
+{
+    return CB_FWD(fn)(get<Idx>(tuple)...);
+}
 
-    using binary_fn::operator();
+template <typename T, typename Fn>
+concept has_member_apply_with = requires(T && t, Fn && fn) {
+    { CB_FWD(t).apply(CB_FWD(fn)) };
 };
+
+template <typename Fn, typename Tuple>
+concept direct_applicable = requires(Fn && fn, Tuple && args) {
+    { apply(CB_FWD(fn), CB_FWD(args)) };
+};
+
+template <typename Fn, typename Tuple>
+concept default_applicable = requires(Fn && fn, Tuple && args) {
+    { std::tuple_size_v<Tuple> } -> std::convertible_to<std::size_t>;
+    { default_apply(CB_FWD(fn), CB_FWD(args), std::make_index_sequence<std::tuple_size_v<Tuple>>()) };
+};
+
+template <typename Fn, typename Obj>
+concept applicable = direct_applicable<Fn, Obj>
+                  or has_member_apply_with<Obj, Fn>
+                  or default_applicable<Fn, Obj>;
+
+}  // namespace detail
+
+template <typename Fn>
+struct applicable;
+
+struct apply_fn
+{
+    template <typename Fn, typename T>
+        requires detail::applicable<Fn, T>
+    [[nodiscard]] constexpr CB_STATIC
+    auto operator()(Fn && fn, T && args) CB_CONST
+    {
+        if constexpr (detail::has_member_apply_with<T, Fn>) {
+            return CB_FWD(args).apply(CB_FWD(fn)); 
+        } else if constexpr (detail::direct_applicable<Fn, T>) {
+            return apply(CB_FWD(fn), CB_FWD(args));
+        } else {
+            constexpr auto seq = std::make_index_sequence<std::tuple_size_v<T>>();
+            return detail::default_apply(CB_FWD(fn), CB_FWD(args), seq);
+        }
+    }
+
+    template <typename Fn>
+    [[nodiscard]] constexpr CB_STATIC
+    auto operator()(Fn && fn) CB_CONST
+    {
+        return applicable<std::decay_t<Fn>>(CB_FWD(fn));
+    }
+};
+
+template <typename Fn>
+struct applicable
+{
+    [[no_unique_address]] Fn fn;
+
+    template <typename Self, typename Tuple>
+        requires detail::applicable<Fn, Tuple>
+    [[nodiscard]] constexpr auto operator()(this Self && self, Tuple && tuple) -> decltype(auto)
+    {
+        return apply_fn{}(detail::forward_like<Self>(self.fn), CB_FWD(tuple));
+    }
+};
+
 
 constexpr inline apply_fn apply;
 

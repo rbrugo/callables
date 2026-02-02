@@ -184,6 +184,21 @@ int main()
             callables::get<2>(tup) = 6;
             expect(tup == std::tuple{2, 4, 6});
         };
+
+        should("extract a tuple of values using get") = [] {
+            auto example = std::tuple{1, 2., std::string_view{"three"}};
+            auto external_get = test::external_get{{1, 2, 3}};
+            auto member_get = test::external_get{{1, 2, 3}};
+            expect(callables::get<0, 1>(example) == std::tuple{1, 2.});
+            expect(callables::get<0, 2>(external_get) == std::tuple{1, 3});
+            expect(callables::get<1, 2>(member_get) == std::tuple{2, 3});
+        };
+
+        should("eventually return a tuple of references") = []{
+            auto tup = std::tuple{1, 2, 3};
+            callables::get<0, 1, 2>(tup) = std::tuple{2, 4, 6};
+            expect(tup == std::tuple{2, 4, 6});
+        };
     };
 
     "at_fn"_test = [] {

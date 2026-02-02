@@ -34,6 +34,7 @@
 #include <span>
 #include <cstdint>
 #include <functional>
+#include "get.hpp"          // IWYU pragma: export
 #include "identity.hpp"     // IWYU pragma: export
 #include "combinators.hpp"  // IWYU pragma: export
 #include "nullable.hpp"
@@ -52,7 +53,7 @@ namespace callables
 // flip            : combinators
 // curry           : combinators
 // construct
-// get             :  access   ?
+// get             :  get
 // front           :  access   ?
 // at              :  access   ?
 // from_container  :  access   ?
@@ -158,22 +159,6 @@ public:
 
 template <typename T>
 constexpr inline construct_fn<T> construct;
-
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-// ....................................GET..................................... //
-// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-template <std::size_t N>
-struct get_fn
-{
-    template <typename Obj>
-    constexpr CB_STATIC
-    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(CB_FWD(obj))))
-        -> decltype(auto)
-    { return get<N>(CB_FWD(obj)); }
-};
-
-template <std::size_t N>
-constexpr inline get_fn<N> get;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................FRONT.................................... //
