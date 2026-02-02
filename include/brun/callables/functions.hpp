@@ -52,6 +52,7 @@ namespace callables
 // on              : combinators
 // flip            : combinators
 // curry           : combinators
+// graph           : combinators
 // construct
 // get             :  get
 // front           :  access   ?

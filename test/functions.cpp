@@ -240,6 +240,26 @@ int main()
             expect(not_(p2, std::array<float, 2>{})) << "not" << p2_expr << "with arg array<float, 2>{}";
         };
     };
+
+    "graph_fn"_test = [] {
+        using callables::graph;
+        auto [cmp, cmp_expr] = DECLARE([](auto a, auto b) { return a == b; });
+        auto [square, square_expr] = DECLARE(([](auto n) { return n * n; }));
+
+        should("return a tuple containing the arguments and the invocation result") = [&] {
+            expect(graph(square, 3) == std::tuple{3, 9}) << square_expr << ", 3";
+            expect(graph(square, -9.) == std::tuple{-9., 81.}) << square_expr << ", -9.";
+            expect(graph(cmp, 3, 3) == std::tuple{3, 3, true}) << cmp_expr << ", 3, 3";
+            expect(graph(cmp, std::string_view{"42"}, "7") == std::tuple{std::string_view{"42"}, "7", false}) << cmp_expr << ", \"42\"sv, \"7\"";
+        };
+
+        should("be partially-applicable") = [&]{
+            expect(graph(square)(3) == std::tuple{3, 9}) << square_expr << ", 3";
+            expect(graph(square)(-9.) == std::tuple{-9., 81.}) << square_expr << ", -9.";
+            expect(graph(cmp)(3, 3) == std::tuple{3, 3, true}) << cmp_expr << ", 3, 3";
+            expect(graph(cmp)(std::string_view{"42"}, "7") == std::tuple{std::string_view{"42"}, "7", false}) << cmp_expr << ", \"42\"sv, \"7\"";
+        };
+    };
 }
 
 #undef DECLARE

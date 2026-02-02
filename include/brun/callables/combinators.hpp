@@ -20,6 +20,8 @@ namespace callables
 // on
 // flip
 // curry
+// apply
+// graph
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
@@ -407,6 +409,26 @@ static_assert(std::same_as<decltype(sa), decltype(sb)>);
 constexpr inline auto apply2 = +apply;
 }  // namespace test
 #endif  // CB_TESTING_APPLY_OPERATOR
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................GRAPH.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct graph_fn : public binary_fn<graph_fn>
+{
+    template <typename Fn, typename ...Ts>
+        requires (sizeof...(Ts) > 0) and std::invocable<Fn, Ts...>
+    [[nodiscard]] CB_STATIC constexpr
+    auto operator()(Fn && fn, Ts &&... ts) CB_CONST
+    {
+        return std::tuple<Ts..., std::invoke_result_t<Fn, Ts...>>(ts..., CB_FWD(fn)(CB_FWD(ts)...));
+    }
+
+    using binary_fn::operator();
+};
+
+constexpr inline graph_fn graph;
+
+static_assert(graph([](auto x) { return x * 2; }, 3) == std::tuple{3, 6});
 
 }  // namespace callables
 
