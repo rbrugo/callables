@@ -22,6 +22,7 @@ namespace callables
 // curry
 // apply
 // graph
+// if_then_else
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
@@ -236,8 +237,8 @@ struct flip_fn
 
 constexpr inline flip_fn flip;
 
-static_assert(flip([](auto a, auto b) { return b; })(0, 1) == 0);
-static_assert(flip([](auto a, auto b, auto c) { return c; })(0, 1, 2) == 0);
+static_assert(flip([]([[maybe_unused]] auto _, auto b) { return b; })(0, 1) == 0);
+static_assert(flip([]([[maybe_unused]] auto _1,  [[maybe_unused]] auto _2, auto c) { return c; })(0, 1, 2) == 0);
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................CURRY.................................... //
@@ -333,8 +334,8 @@ concept direct_applicable = requires(Fn && fn, Tuple && args) {
 
 template <typename Fn, typename Tuple>
 concept default_applicable = requires(Fn && fn, Tuple && args) {
-    { std::tuple_size_v<Tuple> } -> std::convertible_to<std::size_t>;
-    { default_apply(CB_FWD(fn), CB_FWD(args), std::make_index_sequence<std::tuple_size_v<Tuple>>()) };
+    { std::tuple_size_v<std::decay_t<Tuple>> } -> std::convertible_to<std::size_t>;
+    { default_apply(CB_FWD(fn), CB_FWD(args), std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>()) };
 };
 
 template <typename Fn, typename Obj>
@@ -429,6 +430,77 @@ struct graph_fn : public binary_fn<graph_fn>
 constexpr inline graph_fn graph;
 
 static_assert(graph([](auto x) { return x * 2; }, 3) == std::tuple{3, 6});
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ................................IF_THEN_ELSE................................ //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+template <typename If, typename Then, typename Else>
+struct if_then_else_do
+{
+    If _if;
+    Then _then;
+    Else _else;
+
+    template <typename ...Args>
+        requires std::invocable<If, Args...>
+             and std::convertible_to<std::invoke_result_t<If, Args...>, bool>
+    constexpr auto operator()(Args &&... args) {
+        if (_if(std::as_const(args)...)) {
+            if constexpr (std::invocable<Then, Args...>) {
+                return _then(CB_FWD(args)...);
+            } else if constexpr (std::invocable<Then>) {
+                return _then();
+            } else {
+                return _then;
+            }
+        } else {
+            if constexpr (std::invocable<Else, Args...>) {
+                return _else(CB_FWD(args)...);
+            } else if constexpr (std::invocable<Else>) {
+                return _else();
+            } else {
+                return _else;
+            }
+        }
+    }
+};
+
+struct if_then_else_fn
+{
+    /**
+     * @brief construct an `if_then_else` object using an If predicate, a Then and an Else objects.
+     * The object can be used as follow:
+     * ```cpp
+     * auto abs = if_then_else(greater_than(0), id, negate);
+     * abs(arg);
+     *
+     * auto clamp = if_then_else(less_than(100), id, 100);
+     * clamp(arg2);
+     * ```
+     * The `If` must be a predicate, which must be invocable with the arguments provided at the call
+     * site (`arg` and `arg2` in the example).
+     * The `Then` and `Else` objects may consist in one of the following:
+     * - A callable which is invocable with the arguments passed at call site (e.g.: id, negate, plus(2))
+     * - A callable with zero arguments (i.e.: []() { return 100; })
+     * - A constant object (i.e.: 100)
+     * Overloads for the same object will be tested in this order
+     *
+     * @tparam If the type of the `If`
+     * @tparam Then the type of the `Then`
+     * @tparam Else the type of the `Else`
+     * @param if_ the predicate to check agains
+     * @param then_ an object as described above (a callable, a zero args callable, a constant)
+     * @param else_ an object as described above (a callable, a zero args callable, a constant)
+     * @return the resulting `if_then_else` object
+     */
+    template <typename If, typename Then, typename Else>
+    static constexpr auto operator()(If && if_, Then && then_, Else && else_)
+    {
+        return if_then_else_do{CB_FWD(if_), CB_FWD(then_), CB_FWD(else_)};
+    }
+};
+
+constexpr static if_then_else_fn if_then_else;
 
 }  // namespace callables
 

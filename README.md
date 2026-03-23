@@ -59,6 +59,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `value_or`
 - `from_container(cont, N)`
 - `transform_at<N>`: applies the captured function to the nth element of the tuple
+- `if_then_else`
 
 ***Equality and ordering:***
 - `equal_to`
