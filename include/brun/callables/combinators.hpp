@@ -197,9 +197,15 @@ struct flip_fn
     [[nodiscard]] constexpr
     CB_STATIC auto operator()(Fn && fn, Args &&... args) CB_CONST -> decltype(auto)
     {
+#if CB_HAS_PACK_INDEXING
+        return [&fn,&args...]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
+            return CB_FWD(fn)(CB_FWD(args...[sizeof...(Args) - Idx - 1])...);
+        }(std::make_index_sequence<sizeof...(Args)>{});
+#else
         return [fn=CB_FWD(fn),tp=std::forward_as_tuple(args...)]<std::size_t ...Idx>(std::index_sequence<Idx...>) mutable {
             return CB_FWD(fn)(std::get<sizeof...(Args) - Idx - 1>(tp)...);
         }(std::make_index_sequence<sizeof...(Args)>{});
+#endif
     }
 
     template <typename Fn>
@@ -250,6 +256,16 @@ struct curried {
 
     template <typename ...NewArgs> using append_t = curried<Fn, Binded..., NewArgs...>;
 
+#if CB_HAS_TUPLE_UNPACKING
+    template <typename Self, typename ...Args>
+        requires std::invocable<Fn, Binded..., Args...>
+    constexpr auto operator()(this Self && self, Args &&... call_args) noexcept(std::is_nothrow_invocable_v<Fn, Binded..., Args...>)
+        -> std::invoke_result_t<Fn, Binded..., Args...>
+    {
+        auto && [...binded] = CB_FWD(self)._binded_args;
+        return CB_FWD(self)._fn(detail::forward_like<Self>(binded)..., CB_FWD(call_args)...);
+    }
+#else
     template <typename Self, typename ...Args>
         requires std::invocable<Fn, Binded..., Args...>
     constexpr auto operator()(this Self && self, Args &&... call_args) noexcept(std::is_nothrow_invocable_v<Fn, Binded..., Args...>)
@@ -263,6 +279,7 @@ struct curried {
     {
         return CB_FWD(self)._fn(std::get<Idxs>(CB_FWD(self)._binded_args)..., CB_FWD(args)...);
     }
+#endif
 };
 
 template <typename Fn>
@@ -278,6 +295,8 @@ struct curriable {
 
 template <typename ...Ts> constexpr inline auto curried_instance = false;
 template <typename ...Ts> constexpr inline auto curried_instance<curried<Ts...>> = true;
+template <typename T> constexpr inline auto curried_instance<T &> = curried_instance<T>;
+template <typename T> constexpr inline auto curried_instance<T const> = curried_instance<T>;
 
 
 struct curry_fn
@@ -286,16 +305,24 @@ struct curry_fn
     constexpr CB_STATIC
     auto operator()(Fn && fn, Args &&... binded_args) CB_CONST
     {
+        using DFn = std::decay_t<Fn>;
         if constexpr (sizeof...(Args) == 0) {
-            return curriable<std::decay_t<Fn>>(CB_FWD(fn));
+            return curriable<DFn>(CB_FWD(fn));
         } else if constexpr (curried_instance<Fn>) {
-            return typename Fn::template append_t<std::decay_t<Args>...>(
+#if CB_HAS_TUPLE_UNPACKING
+            auto && [...old_binded_args] = CB_FWD(fn)._binded_args;
+            return typename DFn::template append_t<std::decay_t<Args>...>(
+                CB_FWD(fn)._fn, std::forward_as_tuple(detail::forward_like<Fn>(old_binded_args)..., CB_FWD(binded_args)...)
+            );
+#else
+            return typename DFn::template append_t<std::decay_t<Args>...>(
                 CB_FWD(fn)._fn, std::tuple_cat(
-                    CB_FWD(fn)._binded_args, std::forward_as_tuple(binded_args...)
+                    CB_FWD(fn)._binded_args, std::forward_as_tuple(CB_FWD(binded_args)...)
                 )
             );
+#endif  // CB_HAS_TUPLE_UNPACKING
         } else {
-            return curried<std::decay_t<Fn>, std::decay_t<Args>...>(CB_FWD(fn), {CB_FWD(binded_args)...});
+            return curried<DFn, std::decay_t<Args>...>(CB_FWD(fn), {CB_FWD(binded_args)...});
         }
     }
 };
@@ -319,7 +346,7 @@ template <typename Fn, typename Tuple, std::size_t ...Idx>
 constexpr static
 auto default_apply(Fn && fn, Tuple && tuple, std::index_sequence<Idx...>) -> decltype(auto)
 {
-    return CB_FWD(fn)(get<Idx>(tuple)...);
+    return CB_FWD(fn)(get<Idx>(CB_FWD(tuple))...);
 }
 
 template <typename T, typename Fn>

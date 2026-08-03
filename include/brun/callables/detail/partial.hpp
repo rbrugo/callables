@@ -35,6 +35,10 @@
 #include <utility>
 #include "_config_begin.hpp"
 
+#if CB_HAS_TEMPLATE_FOR
+#include <ranges>
+#endif
+
 namespace callables
 {
 
@@ -128,9 +132,18 @@ struct compare_tuple_fn
     [[nodiscard]] constexpr CB_STATIC
     auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
+#if CB_HAS_TEMPLATE_FOR
+        template for (constexpr auto I : std::views::iota(0uz, detail::tuple_size<Tuple> - 1)) {
+            if (not Base{}(CB_FWD_LIKE(p, get<I>(p)), CB_FWD_LIKE(p, get<I + 1>(p)))) {
+                return false;
+            }
+        }
+        return true;
+#else
         return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
             return (Base{}(CB_FWD_LIKE(p, get<I>(p)), CB_FWD_LIKE(p, get<I + 1>(p))) and ...);
         }(std::make_index_sequence<detail::tuple_size<Tuple> - 1>{});
+#endif  // CB_HAS_TEMPLATE_FOR
     }
 };
 
@@ -155,9 +168,14 @@ struct recursive_tuple_fn
     constexpr CB_STATIC
     auto operator()(Tuple && p) CB_CONST -> decltype(auto)
     {
+#if CB_HAS_TUPLE_UNPACKING
+        auto && [...elems] = CB_FWD(p);
+        return Base{}(CB_FWD_LIKE(p, elems)...);
+#else
         return [p=CB_FWD(p)]<std::size_t ...I>(std::index_sequence<I...>) {
             return (Base{}(CB_FWD_LIKE(p, get<I>(p))...));
         }(std::make_index_sequence<detail::tuple_size<Tuple>>{});
+#endif
     }
 };
 

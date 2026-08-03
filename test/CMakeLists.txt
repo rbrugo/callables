@@ -13,6 +13,7 @@ add_executable(functions functions.cpp)
 target_include_directories(functions PRIVATE include)
 target_link_libraries(functions PRIVATE callables)
 target_compile_options(functions PRIVATE "-fdiagnostics-color=always")  # "-fconcepts-diagnostics-depth=3" 
+enable_sanitizers(functions)
 
 # comparison related stuff tests
 add_executable(comparison comparison.cpp)

@@ -67,6 +67,24 @@
 #define CB_HAS_REFLECTION 0
 #endif
 
+#if defined(__cpp_expansion_statements)
+#define CB_HAS_TEMPLATE_FOR 1
+#else
+#define CB_HAS_TEMPLATE_FOR 0
+#endif
+
+#if __cpp_structured_bindings >= 202411L
+#define CB_HAS_TUPLE_UNPACKING 1
+#else
+#define CB_HAS_TUPLE_UNPACKING 0
+#endif
+
+#if __cpp_pack_indexing
+#define CB_HAS_PACK_INDEXING 1
+#else
+#define CB_HAS_PACK_INDEXING 0
+#endif
+
 #define CB_FWD(x) static_cast<decltype(x) &&>(x)
 
 #endif /* CB_DETAIL_CONFIG_BEGIN_HPP */

@@ -9,7 +9,7 @@ project(callables VERSION 0.2.1 LANGUAGES CXX)
 include(cmake/general.cmake)
 
 add_library(callables INTERFACE)
-target_compile_features(callables INTERFACE cxx_std_23)
+target_compile_features(callables INTERFACE cxx_std_26)
 target_include_directories(callables
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include/>

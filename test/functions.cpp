@@ -8,6 +8,7 @@
 #include <brun/callables/functions.hpp>
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
+#include <memory>
 
 using namespace std::literals;
 
@@ -64,6 +65,17 @@ int main()
             expect(twice(2)(2)(3) == 12_i) << prod_expr << "curried trice with arg 2, then 2, then 3";
             auto beast = curry(curry(curriable_prod, 1), 2);
             expect(beast(3)(4) == 24_i) << prod_expr << "mixed compositions of curries";
+        };
+        should("support move-only bound arguments, even when re-currying an already curried callable") = [] {
+            auto move_only_sum = [](std::unique_ptr<int> a, std::unique_ptr<int> b) { return *a + *b; };
+
+            auto once = curry(move_only_sum, std::make_unique<int>(3));
+            expect(std::move(once)(std::make_unique<int>(4)) == 7_i) << "curry with a move-only bound argument";
+
+            auto again = curry(move_only_sum, std::make_unique<int>(3));
+            auto twice = curry(std::move(again), std::make_unique<int>(10));
+            expect(std::move(twice)() == 13_i)
+                << "re-currying an already-curried callable with a move-only bound argument";
         };
     };
 

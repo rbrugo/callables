@@ -129,9 +129,14 @@ private:
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
             -> decltype(auto)
         {
+#if CB_HAS_TUPLE_UNPACKING
+            auto && [...pack] = args;
+            return T(CB_FWD(pack)...);
+#else
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
                 return T(std::get<I>(args)...);
             }(std::make_index_sequence<sizeof...(Args)>{});
+#endif  // CB_HAS_TUPLE_UNPACKING
         }
 
         template <typename ...Args>
@@ -141,9 +146,14 @@ private:
             noexcept(std::is_nothrow_constructible_v<T, Args...>)
             -> decltype(auto)
         {
+#if CB_HAS_TUPLE_UNPACKING
+            auto && [...pack] = args;
+            return T(CB_FWD(pack)...);
+#else
             return [args=std::move(args)]<std::size_t ...I>(std::index_sequence<I...>) {
                 return T(std::get<I>(args)...);
             }(std::make_index_sequence<sizeof...(Args)>{});
+#endif  // CB_HAS_TUPLE_UNPACKING
         }
     };
 
