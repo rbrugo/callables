@@ -54,6 +54,7 @@ namespace callables
 // curry           : combinators
 // graph           : combinators
 // construct
+// cast
 // get             :  get
 // front           :  access   ?
 // at              :  access   ?
@@ -160,6 +161,26 @@ public:
 
 template <typename T>
 constexpr inline construct_fn<T> construct;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................CAST.................................... //
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+template <typename T>
+struct cast_fn
+{
+    template <typename Arg>
+        requires std::convertible_to<Arg, T>
+    constexpr CB_STATIC
+    auto operator()(Arg && arg) CB_CONST
+        noexcept(std::is_nothrow_convertible_v<Arg, T>)
+        -> decltype(auto)
+    {
+        return static_cast<T>(CB_FWD(arg));
+    }
+};
+
+template <typename T>
+constexpr inline cast_fn<T> cast;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................FRONT.................................... //

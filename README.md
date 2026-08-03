@@ -54,6 +54,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `dereference`
 - `not_`
 - `construct<T>`, `construct<T>.from_tuple`
+- `cast<T>`: perform a static cast
 - `get<N>`
 - `at(N)`, `at[N]`
 - `value_or`
