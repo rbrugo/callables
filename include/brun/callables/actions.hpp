@@ -150,6 +150,26 @@ struct fold_fn
 {
     static constexpr auto use_projection = false;
 
+    template <typename Cb>
+    struct partial : action_capture<fold_fn, Cb, identity_fn, void>
+    {
+        using action_capture<fold_fn, Cb, identity_fn, void>::operator();
+
+        template <typename T>
+            requires (not std::ranges::input_range<std::remove_cvref_t<T>>)
+        [[nodiscard]] constexpr auto operator()(T && init) const { return from(CB_FWD(init)); }
+
+        template <typename T>
+        [[nodiscard]] constexpr auto from(T && init) const
+        {
+            if constexpr (std::is_empty_v<Cb>) {
+                return fold_fn{}(Cb{}, CB_FWD(init));
+            } else {
+                return fold_fn{}(this->_fn, CB_FWD(init));
+            }
+        }
+    };
+
     template <
         std::input_iterator I, std::sentinel_for<I> S, typename Init = std::iter_value_t<I>,
         typename BinaryOp, typename Proj = identity_fn
@@ -193,9 +213,9 @@ struct fold_fn
     constexpr static auto operator()(Cb binary_fn) noexcept
     {
         if constexpr (std::is_empty_v<std::remove_cvref_t<Cb>>) {
-            return action_capture<fold_fn, Cb, identity_fn, void>{};
+            return partial<Cb>{};
         } else {
-            return action_capture<fold_fn, Cb, identity_fn, void>{std::move(binary_fn), {}};
+            return partial<Cb>{std::move(binary_fn), {}};
         }
     }
 };
