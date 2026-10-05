@@ -78,8 +78,13 @@ template <typename T>
 consteval auto has_call_operator()
 {
     constexpr auto ctx = std::meta::access_context::current();
+    constexpr auto type = ^^T;
 
-    for (auto member : std::meta::members_of(^^T, ctx)) {
+    if constexpr (not is_class_type(type) and not is_function_type(type)) {
+        return false;
+    }
+
+    for (auto member : std::meta::members_of(type, ctx)) {
         if (is_operator_function(member) or is_operator_function_template(member)) {
             if (operator_of(member) == std::meta::op_parentheses) {
                 return true;
@@ -89,9 +94,20 @@ consteval auto has_call_operator()
     return false;
 }
 
-template <typename T> concept callable = has_call_operator<std::decay_t<T>>;
+/**
+ * @brief Select only classes with an operator() and functions.
+ *
+ * @tparam T the type we want to check
+ */
+template <typename T> concept callable = has_call_operator<std::decay_t<T>>();
 #else
-template <typename T> concept callable = true; // sigh
+/**
+ * @brief Should select only objects with an operator(). In C++23 this is not possible, so
+ *        we select only classes and functions instead.
+ *
+ * @tparam T the type we want to check
+ */
+template <typename T> concept callable = std::is_class_v<std::decay_t<T>> or std::is_function_v<std::decay_t<T>>; // sigh
 #endif
 
 } // namespace callables::detail
