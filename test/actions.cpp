@@ -126,6 +126,15 @@ int main()
             auto & r = sort(v);
             expect(v == std::vector{1, 2, 3});
             expect(&r == &v);
+            static_assert(std::is_same_v<decltype(v | sort()), std::vector<int> &>);
+        };
+        should("return a sorted temporary by value") = [] {
+            static_assert(std::is_same_v<decltype(sort(std::vector{3, 1, 2})), std::vector<int>>);
+            static_assert(std::is_same_v<decltype(std::vector{3, 1, 2} | sort()), std::vector<int>>);
+            auto const v = sort(std::vector{3, 1, 2});
+            expect(v == std::vector{1, 2, 3});
+            auto const w = std::vector{3, 1, 2} | sort(greater_than);
+            expect(w == std::vector{3, 2, 1});
         };
         should("accept a comparator and a projection") = [] {
             auto v = std::vector{1, 3, 2};

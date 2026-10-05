@@ -254,15 +254,29 @@ struct sort_fn
         return std::ranges::sort(std::move(first), std::move(last), std::move(compare), std::move(projection));
     }
 
+    // An lvalue range is sorted in place and returned by reference
     template <
         std::ranges::random_access_range Rng,
         typename Comp = less_fn, typename Proj = identity_fn
     >
-    constexpr static auto operator()(Rng && rng, Comp compare = {}, Proj projection = {}) -> decltype(auto)
+    constexpr static auto operator()(Rng & rng, Comp compare = {}, Proj projection = {}) -> Rng &
     {
-        auto && result = CB_FWD(rng);
         std::ranges::sort(rng, std::move(compare), std::move(projection));
-        return result;
+        return rng;
+    }
+
+    // An rvalue range is returned by value, so the result never refers to a temporary
+    // that is about to die; discarding it would throw the sorted range away
+    template <
+        std::ranges::random_access_range Rng,
+        typename Comp = less_fn, typename Proj = identity_fn
+    >
+        requires (not std::is_lvalue_reference_v<Rng>)
+    [[nodiscard]] constexpr static auto operator()(Rng && rng, Comp compare = {}, Proj projection = {})
+        -> std::remove_cvref_t<Rng>
+    {
+        std::ranges::sort(rng, std::move(compare), std::move(projection));
+        return std::move(rng);
     }
 
 
