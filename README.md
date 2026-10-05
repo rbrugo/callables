@@ -94,6 +94,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 
 ***Range actions***
 - `fold` (without projection support)
+- `sum` = `fold(plus)`
 - `sort`
 
 ***Result Policies***

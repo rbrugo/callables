@@ -35,6 +35,7 @@
 #include <ranges>
 #include <algorithm>
 
+#include "arithmetic.hpp"
 #include "identity.hpp"
 #include "ordering.hpp"
 
@@ -200,6 +201,7 @@ struct fold_fn
 };
 
 constexpr inline fold_fn fold;
+constexpr inline auto sum = fold(plus);
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
