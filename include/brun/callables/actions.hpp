@@ -34,6 +34,7 @@
 #include <iterator>
 #include <ranges>
 #include <algorithm>
+#include <utility>
 
 #include "arithmetic.hpp"
 #include "identity.hpp"
@@ -135,11 +136,26 @@ struct action_capture<Action, BinaryOp, Proj, void>
     }
 };
 
-template <std::ranges::input_range Rng, typename Action, typename Cb, typename Proj, typename I>
-    requires std::invocable<action_capture<Action, Cb, Proj, I>, Rng>
-constexpr auto operator|(Rng && rng, action_capture<Action, Cb, Proj, I> const & capture) -> decltype(auto)
+namespace detail
 {
-    return capture(std::forward<Rng>(rng));
+// overload resolution deduces a specialization of `action_capture` from any type
+// publicly and unambiguously derived from one
+template <typename Action, typename BinaryOp, typename Proj, typename Init>
+void as_action_capture(action_capture<Action, BinaryOp, Proj, Init> const &);
+
+// an action_capture, or a type derived from one (e.g. fold_fn::partial)
+template <typename T>
+concept action_capture_like = requires (T const & t) { detail::as_action_capture(t); };
+}  // namespace detail
+
+// Take the capture by forwarding reference, not as `const &`, so a derived capture
+// can bind without a derived-to-base conversion
+template <std::ranges::input_range Rng, typename Capture>
+    requires detail::action_capture_like<std::remove_cvref_t<Capture>>
+        and std::invocable<std::remove_cvref_t<Capture> const &, Rng>
+constexpr auto operator|(Rng && rng, Capture && capture) -> decltype(auto)
+{
+    return std::as_const(capture)(std::forward<Rng>(rng));
 }
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //

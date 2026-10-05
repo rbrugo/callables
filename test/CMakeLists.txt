@@ -37,6 +37,12 @@ target_include_directories(format PRIVATE include)
 target_link_libraries(format PRIVATE callables)
 target_compile_options(format PRIVATE "-fdiagnostics-color=always")
 
+# range actions tests
+add_executable(actions actions.cpp)
+target_include_directories(actions PRIVATE include)
+target_link_libraries(actions PRIVATE callables)
+target_compile_options(actions PRIVATE "-fdiagnostics-color=always")
+
 add_test(arithmetic arithmetic)
 add_test(bit_operators bit_operators)
 add_test(functions functions)
@@ -44,3 +50,4 @@ add_test(comparison comparison)
 add_test(ordering ordering)
 add_test(logical logical)
 add_test(format format)
+add_test(actions actions)
