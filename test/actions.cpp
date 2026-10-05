@@ -153,6 +153,14 @@ int main()
             expect(v == std::vector{1, 2, 3});
             v | sort(greater_than);
             expect(v == std::vector{3, 2, 1});
+
+            auto items = std::vector<item>{{"b", 2}, {"c", 3}, {"a", 1}};
+            items | sort(less_than, &item::weight);
+            expect(items[0].name == "a"s);
+            expect(items[2].name == "c"s);
+            auto const sorted = std::vector<item>{{"b", 2}, {"c", 3}, {"a", 1}} | sort(greater_than, &item::weight);
+            expect(sorted[0].name == "c"s);
+            expect(sorted[2].name == "a"s);
         };
         should("be evaluable at compile time") = [] {
             static_assert(sort(std::array{3, 2, 1}) == std::array{1, 2, 3});

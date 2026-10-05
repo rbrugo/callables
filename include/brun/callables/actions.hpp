@@ -55,6 +55,18 @@ template <typename T>
     requires requires() { { T::use_projection } -> std::convertible_to<bool>; }
 constexpr inline auto use_projection<T> = static_cast<bool>(T::use_projection);
 
+namespace detail
+{
+// What the binary operation of a capture is called with: projected elements if the
+// action uses a projection, the elements themselves otherwise
+template <typename Action, typename Proj, typename Rng>
+using capture_arg_t = std::conditional_t<
+    use_projection<Action>,
+    std::invoke_result_t<Proj const &, std::ranges::range_reference_t<Rng>>,
+    std::ranges::range_value_t<Rng>
+>;
+}  // namespace detail
+
 template <typename Action, typename BinaryOp, typename Proj, typename Init>
 struct action_capture
 {
@@ -101,7 +113,7 @@ struct action_capture<Action, BinaryOp, Proj, void>
     [[no_unique_address]] Proj _proj;
 
     template <std::ranges::input_range Rng>
-        requires std::invocable<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>
+        requires std::invocable<BinaryOp, detail::capture_arg_t<Action, Proj, Rng>, detail::capture_arg_t<Action, Proj, Rng>>
         // and std::convertible_to<
         //     std::invoke_result_t<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>,
         //     std::ranges::range_value_t<Rng>
@@ -121,7 +133,7 @@ template <typename Action, typename BinaryOp, typename Proj>
 struct action_capture<Action, BinaryOp, Proj, void>
 {
     template <std::ranges::input_range Rng>
-        requires std::invocable<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>
+        requires std::invocable<BinaryOp, detail::capture_arg_t<Action, Proj, Rng>, detail::capture_arg_t<Action, Proj, Rng>>
         // and std::convertible_to<
         //     std::invoke_result_t<BinaryOp, std::ranges::range_value_t<Rng>, std::ranges::range_value_t<Rng>>,
         //     std::ranges::range_value_t<Rng>
