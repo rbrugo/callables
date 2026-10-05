@@ -33,11 +33,11 @@
 
 #include <concepts>
 
+#include "_config_begin.hpp"  // must precede the CB_HAS_REFLECTION check below
+
 #if CB_HAS_REFLECTION != 0
 #include <meta>
 #endif
-
-#include "_config_begin.hpp"
 
 namespace callables::detail
 {
