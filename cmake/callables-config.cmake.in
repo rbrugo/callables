@@ -1,4 +1,13 @@
+######################################################################
+# @author      : Riccardo Brugo (brugo.riccardo@gmail.com)
+# @file        : callables-config.cmake.in
+# @description : package config file, consumed by `find_package(callables)`
+######################################################################
 @PACKAGE_INIT@
 
-include("${CMAKE_CURRENT_LIST_DIR}/callables-targets.cmake")
+# Keeps a second `find_package(callables)` from defining again the imported target
+if (NOT TARGET callables::callables)
+    include("${CMAKE_CURRENT_LIST_DIR}/callables-targets.cmake")
+endif()
+
 check_required_components(callables)
