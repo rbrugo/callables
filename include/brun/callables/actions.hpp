@@ -182,7 +182,7 @@ struct fold_fn
     template <std::ranges::input_range Rng, typename Init = std::ranges::range_value_t<Rng>, typename Cb>
     constexpr static auto operator()(Rng && rng, Init && init, Cb binary_fn) -> decltype(auto)
     {
-        return std::ranges::fold_left(CB_FWD(rng), std::move(init), std::move(binary_fn));
+        return std::ranges::fold_left(CB_FWD(rng), CB_FWD(init), std::move(binary_fn));
     }
 
     template <std::input_iterator I, std::sentinel_for<I> S, typename Cb>
