@@ -7,6 +7,8 @@
 #ifndef CB_FUNCTIONAL_FUNCTOR_HPP
 #define CB_FUNCTIONAL_FUNCTOR_HPP
 
+#include <array>
+#include <concepts>
 #include <optional>
 #include <expected>
 #include <vector>
@@ -77,18 +79,36 @@ template <typename From, typename Fn, std::size_t N>
     requires std::invocable<Fn, From const &>
 constexpr auto fmap(Fn && fn, std::array<From, N> const & from)
 {
-    return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
-        return std::array{fn(std::get<Idx>(from))...};
-    }(std::make_index_sequence<N>());
+    using to_t = std::invoke_result_t<Fn &, From const &>;
+    if constexpr (std::default_initializable<to_t> and std::assignable_from<to_t &, to_t>) {
+        std::array<to_t, N> result{};
+        for (std::size_t i = 0; i < N; ++i) {
+            result[i] = fn(from[i]);
+        }
+        return result;
+    } else {
+        return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
+            return std::array{fn(std::get<Idx>(from))...};
+        }(std::make_index_sequence<N>());
+    }
 }
 
 template <typename From, typename Fn, std::size_t N>
     requires std::invocable<Fn, From &&>
 constexpr auto fmap(Fn && fn, std::array<From, N> && from)
 {
-    return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
-        return std::array{fn(std::move(std::get<Idx>(from)))...};
-    }(std::make_index_sequence<N>());
+    using to_t = std::invoke_result_t<Fn &, From &&>;
+    if constexpr (std::default_initializable<to_t> and std::assignable_from<to_t &, to_t>) {
+        std::array<to_t, N> result{};
+        for (std::size_t i = 0; i < N; ++i) {
+            result[i] = fn(std::move(from[i]));
+        }
+        return result;
+    } else {
+        return [&]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
+            return std::array{fn(std::move(std::get<Idx>(from)))...};
+        }(std::make_index_sequence<N>());
+    }
 }
 
 
