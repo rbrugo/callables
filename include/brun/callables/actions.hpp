@@ -294,7 +294,7 @@ struct sort_fn
 
     // Partial applicator and pipe launcher
     template <typename Comp = less_fn, typename Proj = identity_fn>
-        requires (not std::ranges::input_range<Comp>)
+        requires (not std::ranges::input_range<Comp> and not std::input_or_output_iterator<Comp>)
     constexpr static auto operator()(Comp compare = {}, Proj projection = {}) noexcept
     {
         if constexpr (std::is_empty_v<std::remove_cvref_t<Comp>> and std::is_empty_v<std::remove_cvref_t<Proj>>) {

@@ -147,6 +147,13 @@ int main()
             expect(items[1].name == "b"s);
             expect(items[2].name == "c"s);
         };
+        should("sort an iterator pair") = [] {
+            auto v = std::vector{3, 1, 2};
+            sort(v.begin(), v.end());
+            expect(v == std::vector{1, 2, 3});
+            sort(v.begin(), v.end(), greater_than);
+            expect(v == std::vector{3, 2, 1});
+        };
         should("be pipeable") = [] {
             auto v = std::vector{3, 1, 2};
             v | sort();
