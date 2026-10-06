@@ -56,6 +56,7 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `construct<T>`, `construct<T>.from_tuple`
 - `cast<T>`: perform a static cast
 - `get<N>`
+- `member<"name">`: extracts a public data member by name, `member<"a", "b">` a tuple of them (requires reflection)
 - `at(N)`, `at[N]`
 - `value_or`
 - `from_container(cont, N)`

@@ -8,7 +8,12 @@
 #include <brun/callables/functions.hpp>
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
+#include <algorithm>
 #include <memory>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 using namespace std::literals;
 
@@ -37,6 +42,9 @@ struct member_get
     std::array<int, 3> x;
     template <std::size_t N> auto get() { return std::get<N>(x); }
 };
+
+struct point { int x; double y; };
+struct flags { unsigned on : 1; int count; };
 }  // namespace test
 
 
@@ -212,6 +220,52 @@ int main()
             expect(tup == std::tuple{2, 4, 6});
         };
     };
+
+#if defined(__cpp_impl_reflection) && __cpp_impl_reflection >= 202506L
+    "member_fn"_test = [] {
+        using callables::member;
+        should("extract a data member by name") = [] {
+            auto const p = test::point{1, 2.5};
+            expect(member<"x">(p) == 1_i);
+            expect(member<"y">(p) == 2.5_d);
+        };
+
+        should("return a reference, like get") = [] {
+            auto p = test::point{1, 2.5};
+            member<"x">(p) = 3;
+            expect(p.x == 3_i);
+            static_assert(std::is_same_v<decltype(member<"x">(p)), int &>);
+            static_assert(std::is_same_v<decltype(member<"x">(std::as_const(p))), int const &>);
+            static_assert(std::is_same_v<decltype(member<"x">(test::point{})), int &&>);
+        };
+
+        should("extract a tuple of references") = [] {
+            auto p = test::point{1, 2.5};
+            member<"x", "y">(p) = std::tuple{4, 5.5};
+            expect(p.x == 4_i);
+            expect(p.y == 5.5_d);
+            static_assert(std::is_same_v<decltype(member<"x", "y">(p)), std::tuple<int &, double &>>);
+        };
+
+        should("return a copy of a bit-field") = [] {
+            auto const f = test::flags{1, 2};
+            expect(member<"on">(f) == 1_u);
+            static_assert(std::is_same_v<decltype(member<"on">(f)), unsigned>);
+        };
+
+        should("work as a projection") = [] {
+            auto points = std::vector<test::point>{{3, 0.}, {1, 0.}, {2, 0.}};
+            std::ranges::sort(points, {}, member<"x">);
+            expect(points[0].x == 1_i);
+            expect(points[1].x == 2_i);
+            expect(points[2].x == 3_i);
+        };
+
+        should("be evaluable at compile time") = [] {
+            static_assert(member<"y">(test::point{1, 2.5}) == 2.5);
+        };
+    };
+#endif
 
     "at_fn"_test = [] {
         auto ct = std::vector{1, 2, 3};
