@@ -6,10 +6,12 @@
  */
 
 #include <brun/callables/functions.hpp>
+#include <brun/callables/ordering.hpp>
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -45,7 +47,16 @@ struct member_get
 
 struct point { int x; double y; };
 struct flags { unsigned on : 1; int count; };
+constexpr auto x_of(point const & p) -> int { return p.x; }
+constexpr auto lower(int a, int b) { return a < b; }
+
+struct counter { int x; constexpr auto minus(int y) const -> int { return x - y; } };
+struct counter_call { counter c; int y; };  // a user tuple-like, applied through `get`
+template <std::size_t N>
+constexpr auto get(counter_call const & cc) { if constexpr (N == 0) { return cc.c; } else { return cc.y; } }
 }  // namespace test
+
+template <> struct std::tuple_size<test::counter_call> : std::integral_constant<std::size_t, 2> {};
 
 
 
@@ -85,6 +96,12 @@ int main()
             expect(std::move(twice)() == 13_i)
                 << "re-currying an already-curried callable with a move-only bound argument";
         };
+
+        should("accept member pointers and plain functions") = [] {
+            auto const c = test::counter{10};
+            expect(curry(&test::counter::minus, c)(3) == 7_i);
+            expect(curry(test::lower, 1)(2));
+        };
     };
 
     "apply_fn"_test = [] {
@@ -103,6 +120,12 @@ int main()
             expect(apply([](auto x) { return x; })(stuff_1) == 10_i);
             expect(apply([](auto x) { return x; })(stuff_2) == 10_i);
         };
+
+        should("accept member pointers") = [] {
+            auto const c = test::counter{10};
+            expect(apply(&test::counter::minus, std::tuple{c, 3}) == 7_i);
+            expect(apply(&test::counter::minus, test::counter_call{c, 3}) == 7_i);
+        };
     };
 
     "compose_fn"_test = [] {
@@ -116,6 +139,11 @@ int main()
             expect(compose(twice, sum)(2, 3) == 10_i) << twice_expr << ", " << sum_expr << "with 2, 3";
             expect(compose(twice, sum)(1, 2, 3) == 12_i) << twice_expr << ", " << sum_expr << "with 1, 2, 3";
         };
+        should("accept member pointers and plain functions") = [&] {
+            auto const p = test::point{3, 2.5};
+            expect(compose(twice, &test::point::x)(p) == 6_i);
+            expect(compose(twice, test::x_of)(p) == 6_i);
+        };
     };
 
     "on_fn"_test = [] {
@@ -128,6 +156,30 @@ int main()
             expect(on(twice, sum)(3, 4) == 14_i) << sum_expr << ", " << twice_expr << "with 3, 4";
             expect(on(square, sum)(-2, -3) == 13_i) << sum_expr << ", " << square_expr << "with -2, -3";
             expect(on(twice, sum)(0, 1, 2, 3) == 12_i) << twice_expr << ", " << sum_expr << "with 0, 1, 2, 3";
+        };
+        should("accept member pointers and plain functions") = [] {
+            auto const a = test::point{1, 0.};
+            auto const b = test::point{2, 0.};
+            expect(on(&test::point::x, callables::less_than)(a, b));
+            expect(on(test::x_of, test::lower)(a, b));
+            expect(on(test::x_of)(callables::less_than)(a, b));
+            expect(on(&test::point::x)(test::lower)(a, b));
+        };
+    };
+
+    "flip_fn"_test = [] {
+        using callables::flip;
+        should("accept member pointers and plain functions") = [] {
+            auto const c = test::counter{10};
+            expect(flip(&test::counter::minus, 3, c) == 7_i);
+            expect(flip(&test::counter::minus)(3, c) == 7_i);
+            expect(flip(test::lower, 2, 1));
+        };
+
+        should("store the callable by value") = [] {
+            auto const offset = [k = 1](int a, int b) { return a - b + k; };
+            static_assert(std::is_same_v<decltype(flip(offset)), callables::flip_fn::capture<std::decay_t<decltype(offset)>>>);
+            expect(flip(offset)(1, 10) == 10_i);
         };
     };
 
@@ -324,6 +376,16 @@ int main()
             expect(graph(square)(-9.) == std::tuple{-9., 81.}) << square_expr << ", -9.";
             expect(graph(cmp)(3, 3) == std::tuple{3, 3, true}) << cmp_expr << ", 3, 3";
             expect(graph(cmp)(std::string_view{"42"}, "7") == std::tuple{std::string_view{"42"}, "7", false}) << cmp_expr << ", \"42\"sv, \"7\"";
+        };
+
+        should("accept member pointers") = [] {
+            auto const c = test::counter{10};
+            expect(std::get<1>(graph(&test::counter::x, c)) == 10_i);
+        };
+
+        should("not move from the arguments it returns") = [] {
+            auto const size = [](std::string s) { return s.size(); };
+            expect(graph(size, std::string{"hello"}) == std::tuple{std::string{"hello"}, std::size_t{5}});
         };
     };
 }

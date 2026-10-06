@@ -8,7 +8,9 @@
 #define CB_COMBINATORS_HPP
 
 #include <cstdint>
+#include <functional>
 #include <tuple>
+#include <type_traits>
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
 
@@ -27,6 +29,21 @@ namespace callables
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ..................................COMPOSE................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+namespace detail
+{
+// Calls `cb` with `args`. std::invoke is expensive to compile: it is used only for
+// member pointers, any other callable is called directly
+template <typename Cb, typename ...Args>
+constexpr auto invoke(Cb && cb, Args &&... args) -> decltype(auto)
+{
+    if constexpr (std::is_member_pointer_v<std::remove_cvref_t<Cb>>) {
+        return std::invoke(CB_FWD(cb), CB_FWD(args)...);
+    } else {
+        return CB_FWD(cb)(CB_FWD(args)...);
+    }
+}
+}  // namespace detail
+
 struct composed_tag {};
 
 template <typename ...Fns>
@@ -37,9 +54,9 @@ class composed : public composed_tag {
     template <int64_t Idx, typename Tuple, typename ...Args>
     static constexpr auto step(Tuple && functions, Args &&... args) -> decltype(auto) {
         if constexpr (Idx == size - 1) {
-            return std::get<Idx>(CB_FWD(functions))(CB_FWD(args)...);
+            return detail::invoke(std::get<Idx>(CB_FWD(functions)), CB_FWD(args)...);
         } else {
-            return std::get<Idx>(CB_FWD(functions))(step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...));
+            return detail::invoke(std::get<Idx>(CB_FWD(functions)), step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...));
         }
     }
 
@@ -106,24 +123,22 @@ struct on_fn
         [[no_unique_address]] BinaryFn _bin;
 
         template <typename T, typename U>
-            requires requires(T && t, U && u) {
-                { _un(t) };
-                { _un(u) };
-                { _bin(_un(t), _un(u)) };
-            }
+            requires std::invocable<UnaryFn const &, T>
+                 and std::invocable<UnaryFn const &, U>
+                 and std::invocable<BinaryFn const &,
+                                    std::invoke_result_t<UnaryFn const &, T>,
+                                    std::invoke_result_t<UnaryFn const &, U>>
         [[nodiscard]] constexpr auto operator()(T && t, U && u) const -> decltype(auto)
         {
-            return _bin(_un(CB_FWD(t)), _un(CB_FWD(u)));
+            return detail::invoke(_bin, detail::invoke(_un, CB_FWD(t)), detail::invoke(_un, CB_FWD(u)));
         }
 
         template <typename ...Args>
-            requires (std::invocable<UnaryFn, Args> and ...)
-            and requires (Args ...args) {
-                { _bin(_un(args)...) };
-            }
+            requires (std::invocable<UnaryFn const &, Args> and ...)
+                 and std::invocable<BinaryFn const &, std::invoke_result_t<UnaryFn const &, Args>...>
         [[nodiscard]] constexpr auto operator()(Args &&... args) const -> decltype(auto)
         {
-            return _bin(_un(CB_FWD(args))...);
+            return detail::invoke(_bin, detail::invoke(_un, CB_FWD(args))...);
         }
 
         using inner::binary_fn::operator();
@@ -137,13 +152,13 @@ struct on_fn
         template <typename BinaryFn>
         [[nodiscard]] constexpr auto operator()(BinaryFn && binary) const & -> decltype(auto)
         {
-            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{{}, _un, CB_FWD(binary)};
+            return inner<UnaryFn, std::decay_t<BinaryFn>>{{}, _un, CB_FWD(binary)};
         }
 
         template <typename BinaryFn>
         [[nodiscard]] constexpr auto operator()(BinaryFn && binary) && -> decltype(auto)
         {
-            return inner<UnaryFn, std::remove_cvref_t<BinaryFn>>{
+            return inner<UnaryFn, std::decay_t<BinaryFn>>{
                 {}, {}, std::move(_un), CB_FWD(binary)
             };
         }
@@ -151,12 +166,12 @@ struct on_fn
 
     template <typename UnaryFn>
     [[nodiscard]] constexpr static auto operator()(UnaryFn && fn) noexcept
-    { return outer<std::remove_cvref_t<UnaryFn>>{CB_FWD(fn)}; }
+    { return outer<std::decay_t<UnaryFn>>{CB_FWD(fn)}; }
 
     template <typename UnaryFn, typename BinaryFn>
     [[nodiscard]] constexpr static auto operator()(UnaryFn && unary, BinaryFn && binary) noexcept
     {
-        return inner<std::remove_cvref_t<UnaryFn>, std::remove_cvref_t<BinaryFn>>{
+        return inner<std::decay_t<UnaryFn>, std::decay_t<BinaryFn>>{
             {}, {}, CB_FWD(unary), CB_FWD(binary)
         };
     }
@@ -199,11 +214,11 @@ struct flip_fn
     {
 #if CB_HAS_PACK_INDEXING
         return [&fn,&args...]<std::size_t ...Idx>(std::index_sequence<Idx...>) {
-            return CB_FWD(fn)(CB_FWD(args...[sizeof...(Args) - Idx - 1])...);
+            return detail::invoke(CB_FWD(fn), CB_FWD(args...[sizeof...(Args) - Idx - 1])...);
         }(std::make_index_sequence<sizeof...(Args)>{});
 #else
         return [fn=CB_FWD(fn),tp=std::forward_as_tuple(args...)]<std::size_t ...Idx>(std::index_sequence<Idx...>) mutable {
-            return CB_FWD(fn)(std::get<sizeof...(Args) - Idx - 1>(tp)...);
+            return detail::invoke(CB_FWD(fn), std::get<sizeof...(Args) - Idx - 1>(tp)...);
         }(std::make_index_sequence<sizeof...(Args)>{});
 #endif
     }
@@ -229,14 +244,16 @@ struct flip_fn
         }
     };
 
+    // The callable is stored by value: `Fn` is a reference for an lvalue argument
     template <typename Fn>
     [[nodiscard]] constexpr
     CB_STATIC auto operator()(Fn && fn) CB_CONST
     {
-        if constexpr (std::is_empty_v<Fn>) {
-            return capture<Fn>{};
+        using DFn = std::decay_t<Fn>;
+        if constexpr (std::is_empty_v<DFn>) {
+            return capture<DFn>{};
         } else {
-            return capture<Fn>{CB_FWD(fn)};
+            return capture<DFn>{CB_FWD(fn)};
         }
     }
 };
@@ -263,7 +280,7 @@ struct curried {
         -> std::invoke_result_t<Fn, Binded..., Args...>
     {
         auto && [...binded] = CB_FWD(self)._binded_args;
-        return CB_FWD(self)._fn(detail::forward_like<Self>(binded)..., CB_FWD(call_args)...);
+        return detail::invoke(CB_FWD(self)._fn, detail::forward_like<Self>(binded)..., CB_FWD(call_args)...);
     }
 #else
     template <typename Self, typename ...Args>
@@ -277,7 +294,7 @@ struct curried {
     template <typename Self, typename ...Args, std::size_t ...Idxs>
     static constexpr auto _call(Self && self, std::index_sequence<Idxs...>, Args &&... args)
     {
-        return CB_FWD(self)._fn(std::get<Idxs>(CB_FWD(self)._binded_args)..., CB_FWD(args)...);
+        return detail::invoke(CB_FWD(self)._fn, std::get<Idxs>(CB_FWD(self)._binded_args)..., CB_FWD(args)...);
     }
 #endif
 };
@@ -346,7 +363,7 @@ template <typename Fn, typename Tuple, std::size_t ...Idx>
 constexpr static
 auto default_apply(Fn && fn, Tuple && tuple, std::index_sequence<Idx...>) -> decltype(auto)
 {
-    return CB_FWD(fn)(get<Idx>(CB_FWD(tuple))...);
+    return detail::invoke(CB_FWD(fn), get<Idx>(CB_FWD(tuple))...);
 }
 
 template <typename T, typename Fn>
@@ -443,12 +460,14 @@ constexpr inline auto apply2 = +apply;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct graph_fn : public binary_fn<graph_fn>
 {
+    // `fn` gets the arguments as lvalues: they are returned too, so it must not consume them
     template <typename Fn, typename ...Ts>
-        requires (sizeof...(Ts) > 0) and std::invocable<Fn, Ts...>
+        requires (sizeof...(Ts) > 0) and std::invocable<Fn, Ts &...>
     [[nodiscard]] CB_STATIC constexpr
     auto operator()(Fn && fn, Ts &&... ts) CB_CONST
     {
-        return std::tuple<Ts..., std::invoke_result_t<Fn, Ts...>>(ts..., CB_FWD(fn)(CB_FWD(ts)...));
+        auto && result = detail::invoke(CB_FWD(fn), ts...);
+        return std::tuple<Ts..., std::invoke_result_t<Fn, Ts &...>>(CB_FWD(ts)..., CB_FWD(result));
     }
 
     using binary_fn::operator();
