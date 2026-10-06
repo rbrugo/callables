@@ -3,6 +3,10 @@ A set of composable and partially-applicable function objects to simplify the us
 
 ## Example of usage:
 ```cpp
+#include <brun/callables.hpp>
+#include <brun/callables/actions.hpp>  // sort, fold, sum
+#include <brun/callables/math.hpp>     // abs
+
 namespace cb = callables;
 namespace svw = std::views;
 namespace srg = std::ranges;
@@ -21,18 +25,18 @@ struct store
 };
 
 auto boxes = std::vector<box>{...};
-std::ranges::sort(boxes, cb::less_equal);
+srg::sort(boxes, cb::less_than, &box::weight);
 
-auto volume(box const & b) { ... };
+auto volume(box const & b) { ... }
 
-auto heavy = boxes | svw::filter(cb::greater_equal(10), &box::weight);
-auto my_boxes = heavy | svw::filter(heavy, cb::equals("Joe"), &box::label);
-auto take_stuff = my_boxes | svw::transform(cb::minus(10), &box::weight);
+auto heavy = boxes | svw::filter(cb::compose(cb::greater_equal(10), &box::weight));
+auto my_boxes = heavy | svw::filter(cb::compose(cb::equal_to("Joe"), cb::member<"label">));  // needs reflection
+auto take_stuff = my_boxes | svw::transform(cb::compose(cb::minus.right(10), &box::weight));
 auto store_all = take_stuff | svw::transform(cb::construct<store>);
-auto total_weight = my_boxes | std::views::transform(&box::weight) | fold(plus);
-auto biggest = std::ranges::max(boxes, cb::on(volume, cb::less_equal));
+auto total_weight = my_boxes | svw::transform(&box::weight) | cb::sum(0.f);
+auto biggest = srg::max(boxes, cb::on(volume, cb::less_than));
 auto manhattan_distance = cb::on(cb::abs, cb::plus).tuple;
-auto nearest = std::ranges::min(boxes, manhattan_distance);
+auto nearest = srg::min(boxes, cb::less_than, cb::compose(manhattan_distance, &box::coordinates));
 ```
 
 ## Function objects
@@ -44,7 +48,9 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 
 ***Functions:***
 - `apply`
+- unary `operator+` (in `callables::operators`): `+fn` is `apply(fn)`
 - `compose`
+- binary `operator*` (in `callables::operators`): `f * g` is `compose(f, g)`, so `(f * g)(x...) == f(g(x...))`
 - `on`: applies a binary function over a unary function
 - `flip`: applies arguments in reversed order
 - `curry`: make a _Callable_ curriable once for any number of arguments
@@ -58,10 +64,15 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 - `get<N>`
 - `member<"name">`: extracts a public data member by name, `member<"a", "b">` a tuple of them (requires reflection)
 - `at(N)`, `at[N]`
+- `front`: the first element of a range
 - `value_or`
 - `from_container(cont, N)`
 - `transform_at<N>`: applies the captured function to the nth element of the tuple
 - `if_then_else`
+- `graph(fn, x...)`: returns `tuple{x..., fn(x...)}`
+
+Wherever these take a function (`compose`, `on`, `flip`, `curry`, `apply`, `graph`, `operator*`),
+a plain function or a pointer to member works too, e.g. `compose(twice, &point::x)`.
 
 ***Equality and ordering:***
 - `equal_to`
@@ -95,8 +106,10 @@ auto nearest = std::ranges::min(boxes, manhattan_distance);
 
 ***Range actions***
 - `fold` (without projection support)
-- `sum` = `fold(plus)`
-- `sort`
+- `sum` = `fold(plus)`: `range | sum` yields an optional (empty for an empty range), `range | sum(0.)` a value;
+  `sum.from(init)` takes an initial value that is itself a range. Any `fold(fn)` can be seeded the same way
+- `sort`, also with a comparator and a projection (`range | sort(less_than, &item::weight)`): an lvalue
+  range is sorted in place and returned by reference, an rvalue range is returned by value
 
 ***Result Policies***
 As for now, only `ston` uses result policies.
