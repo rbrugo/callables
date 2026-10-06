@@ -56,7 +56,17 @@ class composed : public composed_tag {
         if constexpr (Idx == size - 1) {
             return detail::invoke(std::get<Idx>(CB_FWD(functions)), CB_FWD(args)...);
         } else {
-            return detail::invoke(std::get<Idx>(CB_FWD(functions)), step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...));
+            using inner_t = decltype(step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...));
+            if constexpr (std::is_reference_v<inner_t>) {
+                return detail::invoke(std::get<Idx>(CB_FWD(functions)), step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...));
+            } else {
+                // The inner result is a temporary that dies at the end of this statement: return by
+                // value, so that a reference into it (e.g. from a member pointer) doesn't dangle
+                using result_t = decltype(detail::invoke(std::get<Idx>(CB_FWD(functions)), step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...)));
+                return std::remove_cvref_t<result_t>(
+                    detail::invoke(std::get<Idx>(CB_FWD(functions)), step<Idx + 1>(CB_FWD(functions), CB_FWD(args)...))
+                );
+            }
         }
     }
 

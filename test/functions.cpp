@@ -49,6 +49,7 @@ struct point { int x; double y; };
 struct flags { unsigned on : 1; int count; };
 constexpr auto x_of(point const & p) -> int { return p.x; }
 constexpr auto lower(int a, int b) { return a < b; }
+constexpr auto make_point(int x) -> point { return {x, 0.}; }
 
 struct counter { int x; constexpr auto minus(int y) const -> int { return x - y; } };
 struct counter_call { counter c; int y; };  // a user tuple-like, applied through `get`
@@ -143,6 +144,11 @@ int main()
             auto const p = test::point{3, 2.5};
             expect(compose(twice, &test::point::x)(p) == 6_i);
             expect(compose(twice, test::x_of)(p) == 6_i);
+        };
+        should("not return references into temporaries") = [] {
+            // x(make_point(5)): a reference into the temporary would not be a constant expression
+            static_assert(compose(&test::point::x, test::make_point)(5) == 5);
+            expect(compose(&test::point::x, test::make_point)(5) == 5_i);
         };
     };
 
