@@ -33,6 +33,7 @@
 
 #include <iterator>
 #include <ranges>
+#include "detail/fixed_string.hpp"
 #include "detail/_config_begin.hpp"
 
 #if CB_HAS_FORMAT == 1
@@ -66,24 +67,6 @@ constexpr inline to_string_t to_string;
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................FORMAT................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
-template <typename T, std::size_t Size>
-struct fixed_string
-{
-    using size_type = decltype(Size);
-
-    constexpr fixed_string(T const * str) {
-        for (size_type  i = {}; i < Size; ++i) { data[i] = str[i]; }
-        data[Size] = T();
-    }
-    [[nodiscard]] constexpr auto operator<=>(const fixed_string&) const = default;
-    [[nodiscard]] constexpr operator std::string_view() const { return {std::data(data), Size}; }
-    [[nodiscard]] constexpr auto size() const { return Size; }
-
-    T data[Size + 1u];
-};
-template<class T, std::size_t Capacity, std::size_t Size = Capacity - 1>
-fixed_string(const T (&str)[Capacity]) -> fixed_string<T, Size>;
-
 template <fixed_string Fmt>
 struct format_t
 {
