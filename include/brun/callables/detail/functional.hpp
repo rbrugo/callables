@@ -32,6 +32,7 @@
 #define CB_DETAIL_FUNCTIONAL_HPP
 
 #include <concepts>
+#include <type_traits>
 
 #include "_config_begin.hpp"  // must precede the CB_HAS_REFLECTION check below
 
@@ -80,7 +81,7 @@ consteval auto has_call_operator()
     constexpr auto ctx = std::meta::access_context::current();
     constexpr auto type = ^^T;
 
-    if constexpr (not is_class_type(type) and not is_function_type(type)) {
+    if constexpr (not is_class_type(type)) {
         return false;
     }
 
@@ -95,19 +96,25 @@ consteval auto has_call_operator()
 }
 
 /**
- * @brief Select only classes with an operator() and functions.
+ * @brief A Callable in the standard sense: a function, a pointer to function or to member,
+ *        or a class with an operator().
  *
  * @tparam T the type we want to check
  */
-template <typename T> concept callable = has_call_operator<std::decay_t<T>>();
+template <typename T> concept callable = std::is_function_v<std::remove_pointer_t<std::remove_cvref_t<T>>>
+                                      or std::is_member_pointer_v<std::remove_cvref_t<T>>
+                                      or has_call_operator<std::remove_cvref_t<T>>();
 #else
 /**
- * @brief Should select only objects with an operator(). In C++23 this is not possible, so
- *        we select only classes and functions instead.
+ * @brief A Callable in the standard sense: a function, a pointer to function or to member,
+ *        or a class with an operator(). Without reflection a class can't be checked for an
+ *        operator(), so every class is accepted.
  *
  * @tparam T the type we want to check
  */
-template <typename T> concept callable = std::is_class_v<std::decay_t<T>> or std::is_function_v<std::decay_t<T>>; // sigh
+template <typename T> concept callable = std::is_function_v<std::remove_pointer_t<std::remove_cvref_t<T>>>
+                                      or std::is_member_pointer_v<std::remove_cvref_t<T>>
+                                      or std::is_class_v<std::remove_cvref_t<T>>; // sigh
 #endif
 
 } // namespace callables::detail

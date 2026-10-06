@@ -189,6 +189,32 @@ int main()
         };
     };
 
+    "operators"_test = [] {
+        using callables::operators::operator*, callables::operators::operator+;
+        should("compose with binary *") = [] {
+            auto const twice = [](auto n) { return 2 * n; };
+            auto const inc = [](auto n) { return n + 1; };
+            expect((twice * inc)(3) == 8_i);
+        };
+
+        should("compose plain functions and member pointers with binary *") = [] {
+            auto const twice = [](auto n) { return 2 * n; };
+            auto const p = test::point{3, 2.5};
+            auto const c = test::counter{10};
+            expect((twice * test::x_of)(p) == 6_i);
+            expect((twice * &test::x_of)(p) == 6_i);
+            expect((twice * &test::point::x)(p) == 6_i);
+            expect((twice * &test::counter::minus)(c, 4) == 12_i);
+            constexpr auto make = [](int x) { return test::point{x, 0.}; };
+            static_assert((&test::point::x * make)(5) == 5);
+        };
+
+        should("apply with unary +") = [] {
+            auto const sum = [](auto a, auto b) { return a + b; };
+            expect((+sum)(std::pair{1, 2}) == 3_i);
+        };
+    };
+
     "identity_fn"_test = [] {
         using callables::identity;
         should("return its argument unchanged") = [] {
