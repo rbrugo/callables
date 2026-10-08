@@ -10,6 +10,7 @@
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <functional>
 #include <list>
@@ -131,6 +132,47 @@ int main()
             auto const c = test::counter{10};
             expect(apply(&test::counter::minus, std::tuple{c, 3}) == 7_i);
             expect(apply(&test::counter::minus, test::counter_call{c, 3}) == 7_i);
+        };
+
+        should("accept lvalue user tuple-likes") = [] {
+            auto const cc = test::counter_call{test::counter{10}, 3};
+            expect(apply(&test::counter::minus, cc) == 7_i);
+        };
+
+        should("forward the elements like `std::get`") = [] {
+            constexpr auto types = []<typename ...A>(A &&...) { return std::type_identity<std::tuple<A &&...>>{}; };
+            auto a = 0;
+            auto b = 0;
+            auto t = std::tuple<int, int &, int &&, int const>{1, a, std::move(b), 2};
+            static_assert(std::is_same_v<decltype(apply(types, t)),
+                          std::type_identity<std::tuple<int &, int &, int &, int const &>>>);
+            static_assert(std::is_same_v<decltype(apply(types, std::as_const(t))),
+                          std::type_identity<std::tuple<int const &, int &, int &, int const &>>>);
+            static_assert(std::is_same_v<decltype(apply(types, std::move(t))),
+                          std::type_identity<std::tuple<int &&, int &, int &&, int const &&>>>);
+        };
+
+        should("keep lvalue references of an rvalue tuple") = [] {
+            auto x = 1;
+            apply([](int & r) { r = 5; }, std::forward_as_tuple(x));
+            expect(x == 5_i);
+        };
+
+        should("move the elements out of an rvalue tuple") = [] {
+            auto const deref = [](std::unique_ptr<int> p) { return *p; };
+            expect(apply(deref, std::tuple{std::make_unique<int>(4)}) == 4_i);
+        };
+
+        should("accept pairs, arrays and empty tuples") = [&] {
+            expect(apply(sum, std::pair{1, 2}) == 3_i);
+            expect(apply(prod, std::array{2, 3}) == 6_i);
+            expect(apply([] { return 7; }, std::tuple<>{}) == 7_i);
+        };
+
+        should("be evaluable at compile time") = [] {
+            constexpr auto add = [](int x, int y) { return x + y; };
+            static_assert(apply(add, std::tuple{1, 2}) == 3);
+            static_assert(apply(add)(std::pair{3, 4}) == 7);
         };
     };
 

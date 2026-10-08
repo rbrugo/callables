@@ -7,10 +7,12 @@
 #ifndef CB_COMBINATORS_HPP
 #define CB_COMBINATORS_HPP
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include "detail/partial.hpp"
 #include "detail/functional.hpp"
 
@@ -376,9 +378,40 @@ auto default_apply(Fn && fn, Tuple && tuple, std::index_sequence<Idx...>) -> dec
     return detail::invoke(CB_FWD(fn), get<Idx>(CB_FWD(tuple))...);
 }
 
+// Applies `fn` to a tuple-like of the standard library. With structured binding packs it is much
+// cheaper to compile than `std::apply`, which goes through the expensive `std::invoke`.
+// `decltype(xs)` is the element type, so forwarding it yields the same categories as `get`
+template <typename Fn, typename Tuple>
+constexpr auto std_apply(Fn && fn, Tuple && tuple) -> decltype(auto)
+{
+#if CB_HAS_TUPLE_UNPACKING
+    auto && [...xs] = CB_FWD(tuple);
+    if constexpr (std::is_lvalue_reference_v<Tuple>) {
+        return detail::invoke(CB_FWD(fn), xs...);
+    } else {
+        return detail::invoke(CB_FWD(fn), static_cast<decltype(xs) &&>(xs)...);
+    }
+#else
+    constexpr auto seq = std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>();
+    return detail::default_apply(CB_FWD(fn), CB_FWD(tuple), seq);
+#endif  // CB_HAS_TUPLE_UNPACKING
+}
+
+// The tuple-likes of the standard library, whose ADL `apply` would be `std::apply`
+template <typename T> constexpr inline bool is_std_tuple_like = false;
+template <typename ...Ts> constexpr inline bool is_std_tuple_like<std::tuple<Ts...>> = true;
+template <typename T, typename U> constexpr inline bool is_std_tuple_like<std::pair<T, U>> = true;
+template <typename T, std::size_t N> constexpr inline bool is_std_tuple_like<std::array<T, N>> = true;
+
 template <typename T, typename Fn>
 concept has_member_apply_with = requires(T && t, Fn && fn) {
     { CB_FWD(t).apply(CB_FWD(fn)) };
+};
+
+template <typename Fn, typename Tuple>
+concept std_applicable = is_std_tuple_like<std::remove_cvref_t<Tuple>>
+                     and requires(Fn && fn, Tuple && args) {
+    { std_apply(CB_FWD(fn), CB_FWD(args)) };
 };
 
 template <typename Fn, typename Tuple>
@@ -388,13 +421,15 @@ concept direct_applicable = requires(Fn && fn, Tuple && args) {
 
 template <typename Fn, typename Tuple>
 concept default_applicable = requires(Fn && fn, Tuple && args) {
-    { std::tuple_size_v<std::decay_t<Tuple>> } -> std::convertible_to<std::size_t>;
-    { default_apply(CB_FWD(fn), CB_FWD(args), std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>()) };
+    { std::tuple_size_v<std::remove_cvref_t<Tuple>> } -> std::convertible_to<std::size_t>;
+    { default_apply(CB_FWD(fn), CB_FWD(args), std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>()) };
 };
 
+// Same order as `apply_fn`: checking `direct_applicable` first would instantiate `std::apply`
 template <typename Fn, typename Obj>
-concept applicable = direct_applicable<Fn, Obj>
-                  or has_member_apply_with<Obj, Fn>
+concept applicable = has_member_apply_with<Obj, Fn>
+                  or std_applicable<Fn, Obj>
+                  or direct_applicable<Fn, Obj>
                   or default_applicable<Fn, Obj>;
 
 }  // namespace detail
@@ -411,10 +446,12 @@ struct apply_fn
     {
         if constexpr (detail::has_member_apply_with<T, Fn>) {
             return CB_FWD(args).apply(CB_FWD(fn)); 
+        } else if constexpr (detail::std_applicable<Fn, T>) {
+            return detail::std_apply(CB_FWD(fn), CB_FWD(args));
         } else if constexpr (detail::direct_applicable<Fn, T>) {
             return apply(CB_FWD(fn), CB_FWD(args));
         } else {
-            constexpr auto seq = std::make_index_sequence<std::tuple_size_v<T>>();
+            constexpr auto seq = std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<T>>>();
             return detail::default_apply(CB_FWD(fn), CB_FWD(args), seq);
         }
     }
