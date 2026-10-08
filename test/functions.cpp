@@ -10,7 +10,12 @@
 #define BOOST_UT_DISABLE_MODULE
 #include "boost/ut.hpp"
 #include <algorithm>
+#include <deque>
+#include <functional>
+#include <list>
+#include <map>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -372,6 +377,82 @@ int main()
             }
         };
     };
+    "from_container_fn"_test = [] {
+        using callables::from_container;
+        using capture = callables::from_container_fn;
+        using vec = std::vector<int>;
+
+        should("access the container via `at`, `[]` or iterators") = [] {
+            auto v = std::vector{1, 2, 3};
+            auto m = std::map<std::string, int>{{"a", 1}, {"b", 2}};
+            auto l = std::list{1, 2, 3};
+            expect(from_container(v, 1) == 2_i);
+            expect(from_container(m, "b"s) == 2_i);
+            expect(from_container(l, 2) == 3_i);
+            expect(throws([&]{ from_container(v, 3); })) << "index 3 is out of range";
+        };
+
+        should("capture lvalues by reference") = [] {
+            auto v = std::vector{1, 2, 3};
+            auto const fn = from_container(v);
+            v[0] = 42;
+            expect(fn(0) == 42_i);
+            static_assert(std::is_same_v<capture::capture_t<vec &>, vec &>);
+            static_assert(std::is_same_v<capture::capture_t<vec const &>, vec const &>);
+        };
+
+        should("keep the interface of the captured container") = [] {
+            auto m = std::map<std::string, int>{{"a", 1}};
+            auto d = std::deque{1, 2, 3};
+            auto const by_key = from_container(m);
+            auto const checked = from_container(d);
+            m["a"] = 2;
+            expect(by_key("a"s) == 2_i);
+            expect(throws([&]{ std::ignore = checked(3); })) << "deque::at should still be used";
+        };
+
+        should("capture rvalues by value") = [] {
+            auto v = std::vector{1, 2, 3};
+            auto const copy = from_container(auto{v});
+            auto const owned = from_container(std::vector{7, 8});
+            v[0] = 42;
+            expect(copy(0) == 1_i);
+            expect(owned(1) == 8_i);
+            static_assert(std::is_same_v<capture::capture_t<vec>, vec>);
+        };
+
+        should("unwrap reference_wrappers") = [] {
+            auto v = std::vector{1, 2, 3};
+            auto r = std::ref(v);
+            auto const from_temporary = from_container(std::ref(v));
+            auto const from_named = from_container(r);
+            v[0] = 42;
+            expect(from_temporary(0) == 42_i);
+            expect(from_named(0) == 42_i);
+            static_assert(std::is_same_v<capture::capture_t<std::reference_wrapper<vec>>, vec &>);
+            static_assert(std::is_same_v<capture::capture_t<std::reference_wrapper<vec> &>, vec &>);
+            static_assert(std::is_same_v<capture::capture_t<std::reference_wrapper<vec> const &>, vec &>);
+            static_assert(std::is_same_v<capture::capture_t<std::reference_wrapper<vec const> &>, vec const &>);
+        };
+
+        should("accept views and built-in arrays") = [] {
+            int arr[] = {1, 2, 3};
+            auto const from_array = from_container(arr);
+            auto const from_iota = from_container(std::views::iota(0, 5));
+            arr[0] = 42;
+            expect(from_array(0) == 42_i);
+            expect(from_iota(3) == 3_i);
+        };
+
+        should("work as a projection in a pipeline") = [] {
+            auto const names = std::vector{"zero"s, "one"s, "two"s};
+            auto const picked = std::vector{2, 0}
+                              | std::views::transform(from_container(names))
+                              | std::ranges::to<std::vector>();
+            expect(picked == std::vector{"two"s, "zero"s});
+        };
+    };
+
     "not_fn"_test = [] {
         using callables::not_;
         auto [p1, p1_expr] = DECLARE([](int a, int b) { return a == b; });

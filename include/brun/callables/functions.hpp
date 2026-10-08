@@ -376,11 +376,19 @@ struct from_container_fn
         return try_all(CB_FWD(c), CB_FWD(i));
     }
 
+    // lvalues are captured by reference, rvalues by value, reference_wrappers are unwrapped
+    template <typename T>
+    using capture_t = std::conditional_t<
+        std::same_as<std::unwrap_ref_decay_t<T>, std::remove_cvref_t<T>>,
+        T,
+        std::unwrap_ref_decay_t<T>
+    >;
+
     template <typename T>
     constexpr CB_STATIC
-    auto operator()(T && t) CB_CONST noexcept
+    auto operator()(T && t) CB_CONST noexcept(std::is_nothrow_constructible_v<capture_t<T>, T>)
     {
-        return partial<from_container_fn, std::unwrap_ref_decay_t<T>>{CB_FWD(t)};
+        return partial<from_container_fn, capture_t<T>>{CB_FWD(t)};
     }
 
     template <typename T, std::size_t N>
@@ -392,8 +400,6 @@ struct from_container_fn
 };
 
 constexpr inline from_container_fn from_container;
-
-
 
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
