@@ -58,6 +58,12 @@ struct both_get
 template <std::size_t N>
 constexpr auto get(both_get const &) { return 2; }
 
+struct sized_member_get  // a user tuple-like with a member get
+{
+    int a, b;
+    template <std::size_t N> constexpr auto get() const { if constexpr (N == 0) { return a; } else { return b; } }
+};
+
 struct point { int x; double y; };
 struct flags { unsigned on : 1; int count; };
 constexpr auto x_of(point const & p) -> int { return p.x; }
@@ -71,6 +77,7 @@ constexpr auto get(counter_call const & cc) { if constexpr (N == 0) { return cc.
 }  // namespace test
 
 template <> struct std::tuple_size<test::counter_call> : std::integral_constant<std::size_t, 2> {};
+template <> struct std::tuple_size<test::sized_member_get> : std::integral_constant<std::size_t, 2> {};
 
 
 
@@ -511,6 +518,71 @@ int main()
                               | std::views::transform(from_container(names))
                               | std::ranges::to<std::vector>();
             expect(picked == std::vector{"two"s, "zero"s});
+        };
+    };
+
+    "transform_at_fn"_test = [] {
+        using callables::transform_at;
+        constexpr auto twice = [](int x) { return x * 2; };
+        constexpr auto to_string = [](int x) { return std::to_string(x); };
+
+        should("apply the function to the N-th element only") = [&] {
+            expect(transform_at<1>(twice)(std::tuple{1, 10, 100}) == std::tuple{1, 20, 100});
+            expect(transform_at<0>(to_string)(std::tuple{1, 2}) == std::tuple{"1"s, 2});
+            static_assert(transform_at<2>(twice)(std::tuple{1, 10, 100}) == std::tuple{1, 10, 200});
+        };
+
+        should("keep the other elements of an lvalue as references") = [&] {
+            auto t = std::tuple{1, "a"s};
+            auto r = transform_at<0>(twice)(t);
+            static_assert(std::is_same_v<decltype(r), std::tuple<int, std::string &>>);
+            std::get<1>(r) = "b";
+            expect(std::get<1>(t) == "b"s);
+            static_assert(std::is_same_v<decltype(transform_at<0>(twice)(std::as_const(t))),
+                          std::tuple<int, std::string const &>>);
+        };
+
+        should("move the other elements out of an rvalue") = [&] {
+            auto r = transform_at<1>(twice)(std::tuple{std::make_unique<int>(4), 1});
+            static_assert(std::is_same_v<decltype(r), std::tuple<std::unique_ptr<int>, int>>);
+            expect(*std::get<0>(r) == 4_i);
+        };
+
+        should("transform the values of a map") = [&] {
+            auto const m = std::map<int, int>{{1, 10}, {2, 20}};
+            auto const view = m | std::views::transform(transform_at<1>(to_string));
+            auto const out = view | std::ranges::to<std::map<int, std::string>>();
+            expect(out == std::map<int, std::string>{{1, "10"}, {2, "20"}});
+        };
+
+        should("accept member pointers") = [] {
+            auto const p = std::pair{0, test::point{3, 0.}};
+            expect(transform_at<1>(&test::point::x)(p) == std::tuple{0, 3});
+        };
+
+        should("use a member get, like structured bindings") = [&] {
+            expect(transform_at<1>(twice)(test::sized_member_get{1, 2}) == std::tuple{1, 4});
+        };
+
+        should("store a copy of the function") = [] {
+            auto const make = [] {
+                auto const offset = [n = 1](int x) { return x + n; };
+                static_assert(std::is_same_v<decltype(transform_at<0>(offset)),
+                              callables::transform_at_fn<0>::capture<std::remove_const_t<decltype(offset)>>>);
+                return transform_at<0>(offset);  // would dangle if it stored a reference
+            };
+            expect(make()(std::tuple{1}) == std::tuple{2});
+        };
+
+        should("reject an out of range index") = [&] {
+            static_assert(not std::invocable<decltype(transform_at<2>(twice)), std::pair<int, int>>);
+            static_assert(not std::invocable<decltype(transform_at<-1>(twice)), std::pair<int, int>>);
+        };
+
+        should("reject non tuple-likes and functions that can't be called") = [&] {
+            constexpr auto on_string = [](char const *) { return 0; };
+            static_assert(not std::invocable<decltype(transform_at<0>(twice)), int>);
+            static_assert(not std::invocable<decltype(transform_at<0>(on_string)), std::tuple<int>>);
         };
     };
 

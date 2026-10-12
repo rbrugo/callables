@@ -443,6 +443,16 @@ static_assert(value_or(nullptr, 10) == 10);
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ................................TRANSFORM_AT................................ //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+namespace detail
+{
+    // Keep lvalues as references, materialize rvalues
+    template <typename T>
+    using keep_t = std::conditional_t<std::is_lvalue_reference_v<T>, T, std::remove_cvref_t<T>>;
+
+    template <typename T>
+    concept has_tuple_size = requires { std::tuple_size<std::remove_cvref_t<T>>::value; };
+}  // namespace detail
+
 template <std::int64_t N>
 struct transform_at_fn
 {
@@ -452,42 +462,41 @@ struct transform_at_fn
     {
         [[no_unique_address]] Fn _fn;
 
-        template <typename T, std::int64_t I>
-        constexpr auto _maybe_apply(T && t) -> decltype(auto)
+        template <std::size_t I, typename Self, typename T>
+        static constexpr auto element(Self && self, T && t) -> decltype(auto)
         {
             if constexpr (I == N) {
-                return CB_FWD(_fn)(CB_FWD(t));
+                return detail::invoke(detail::forward_like<Self>(self._fn), detail::get_element<I>(CB_FWD(t)));
             } else {
-                return CB_FWD(t);
+                return detail::get_element<I>(CB_FWD(t));
             }
         }
 
-        template <typename T> static constexpr auto ref(T & t) { return std::ref(t); }
-        template <typename T> static constexpr auto ref(T const & t) { return std::cref(t); }
-        template <typename T> static constexpr auto ref(T && t) { return t; }
-        template <typename T> static constexpr auto ref(T const && t) { return t; }
-
-        template <typename T, std::int64_t I>
-        constexpr auto apply(T && t) -> decltype(auto)
-        { return ref(_maybe_apply<T, I>(CB_FWD(t))); }
-
-
-        template <typename Tuple>
-            requires std::invocable<Fn, std::tuple_element_t<N, Tuple>>
-        constexpr auto operator()(Tuple && tuple) -> decltype(auto)
+        template <typename Self, typename T, std::size_t ...I>
+        static constexpr auto transform(Self && self, T && t, std::index_sequence<I...>)
         {
-            return [tp=CB_FWD(tuple),this]<std::size_t ...I>(std::index_sequence<I...>) mutable {
-                return std::make_tuple(
-                    this->apply<std::tuple_element_t<I, Tuple>, I>(std::forward_like<Tuple>(std::get<I>(tp)))...
-                );
-            }(std::make_index_sequence<std::tuple_size_v<std::remove_cvref_t<Tuple>>>());
+            using result_t = std::tuple<detail::keep_t<decltype(element<I>(CB_FWD(self), CB_FWD(t)))>...>;
+            return result_t(element<I>(CB_FWD(self), CB_FWD(t))...);
+        }
+
+        template <typename Self, typename Tuple>
+            requires detail::has_tuple_size<Tuple>
+                 and (N >= 0 and std::cmp_less(N, detail::tuple_size<Tuple>))
+                 and detail::gettable<N, Tuple>
+                 and std::invocable<
+                     decltype(detail::forward_like<Self>(std::declval<Self &>()._fn)),
+                     decltype(detail::get_element<N>(std::declval<Tuple>()))>
+        [[nodiscard]] constexpr auto operator()(this Self && self, Tuple && tuple)
+        {
+            constexpr auto seq = std::make_index_sequence<detail::tuple_size<Tuple>>();
+            return transform(CB_FWD(self), CB_FWD(tuple), seq);
         }
     };
 
     template <typename Fn>
-    constexpr CB_STATIC auto operator()(Fn && fn) CB_CONST noexcept
+    constexpr CB_STATIC auto operator()(Fn && fn) CB_CONST noexcept(std::is_nothrow_constructible_v<std::decay_t<Fn>, Fn>)
     {
-        return capture<Fn>(CB_FWD(fn));
+        return capture<std::decay_t<Fn>>{CB_FWD(fn)};
     }
 };
 
