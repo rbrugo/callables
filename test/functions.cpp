@@ -51,6 +51,13 @@ struct member_get
     template <std::size_t N> auto get() { return std::get<N>(x); }
 };
 
+struct both_get
+{
+    template <std::size_t N> constexpr auto get() const { return 1; }
+};
+template <std::size_t N>
+constexpr auto get(both_get const &) { return 2; }
+
 struct point { int x; double y; };
 struct flags { unsigned on : 1; int count; };
 constexpr auto x_of(point const & p) -> int { return p.x; }
@@ -316,7 +323,7 @@ int main()
         should("extract N-th value using get") = []{
             auto example = std::tuple{1, 2., std::string_view{"three"}};
             auto external_get = test::external_get{{1, 2, 3}};
-            auto member_get = test::external_get{{1, 2, 3}};
+            auto member_get = test::member_get{{1, 2, 3}};
             expect(callables::get<0>(example) == 1_i);
             expect(callables::get<1>(example) == 2._d);
             expect(callables::get<2>(example) == std::string_view{"three"});
@@ -339,7 +346,7 @@ int main()
         should("extract a tuple of values using get") = [] {
             auto example = std::tuple{1, 2., std::string_view{"three"}};
             auto external_get = test::external_get{{1, 2, 3}};
-            auto member_get = test::external_get{{1, 2, 3}};
+            auto member_get = test::member_get{{1, 2, 3}};
             expect(callables::get<0, 1>(example) == std::tuple{1, 2.});
             expect(callables::get<0, 2>(external_get) == std::tuple{1, 3});
             expect(callables::get<1, 2>(member_get) == std::tuple{2, 3});
@@ -349,6 +356,18 @@ int main()
             auto tup = std::tuple{1, 2, 3};
             callables::get<0, 1, 2>(tup) = std::tuple{2, 4, 6};
             expect(tup == std::tuple{2, 4, 6});
+        };
+
+        should("prefer a member get, like structured bindings") = [] {
+            auto both = test::both_get{};
+            expect(callables::get<0>(both) == 1_i) << "the member get returns 1, the ADL one 2";
+        };
+
+        should("reject types without get") = [] {
+            static_assert(not std::invocable<decltype(callables::get<0>), int>);
+            static_assert(not std::invocable<decltype(callables::get<0>), test::point>);
+            static_assert(not std::invocable<decltype(callables::get<0, 1>), int>);
+            static_assert(std::invocable<decltype(callables::get<0>), test::member_get &>);
         };
     };
 

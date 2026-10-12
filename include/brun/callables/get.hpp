@@ -22,6 +22,39 @@
 namespace callables
 {
 
+namespace detail
+{
+    template <std::size_t N, typename T>
+    concept has_member_get = requires(T && t) { CB_FWD(t).template get<N>(); };
+
+    template <std::size_t N, typename T>
+    concept has_adl_get = requires(T && t) { get<N>(CB_FWD(t)); };
+
+    template <std::size_t N, typename T>
+    concept gettable = has_member_get<N, T> or has_adl_get<N, T>;
+
+    template <std::size_t N, typename T>
+    consteval auto nothrow_get() -> bool
+    {
+        if constexpr (has_member_get<N, T>) {
+            return noexcept(std::declval<T>().template get<N>());
+        } else {
+            return noexcept(get<N>(std::declval<T>()));
+        }
+    }
+
+    template <std::size_t N, typename T>
+        requires gettable<N, T>
+    constexpr auto get_element(T && t) noexcept(nothrow_get<N, T>()) -> decltype(auto)
+    {
+        if constexpr (has_member_get<N, T>) {
+            return CB_FWD(t).template get<N>();
+        } else {
+            return get<N>(CB_FWD(t));
+        }
+    }
+}  // namespace detail
+
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ....................................GET..................................... //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
@@ -29,11 +62,14 @@ template <std::size_t ...Ns>
 struct get_fn
 {
     template <typename Obj>
+        requires (detail::gettable<Ns, Obj> and ...)
     constexpr CB_STATIC
-    auto operator()(Obj && obj) CB_CONST noexcept((noexcept(get<Ns>(CB_FWD(obj))) and ...))
+    auto operator()(Obj && obj) CB_CONST noexcept((noexcept(detail::get_element<Ns>(CB_FWD(obj))) and ...))
         -> decltype(auto)
     {
-        return std::tuple<decltype(get<Ns>(CB_FWD(obj)))...>{get<Ns>(CB_FWD(obj))...};
+        return std::tuple<decltype(detail::get_element<Ns>(CB_FWD(obj)))...>{
+            detail::get_element<Ns>(CB_FWD(obj))...
+        };
     }
 };
 
@@ -41,10 +77,11 @@ template <std::size_t N>
 struct get_fn<N>
 {
     template <typename Obj>
+        requires detail::gettable<N, Obj>
     constexpr CB_STATIC
-    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(get<N>(CB_FWD(obj))))
+    auto operator()(Obj && obj) CB_CONST noexcept(noexcept(detail::get_element<N>(CB_FWD(obj))))
         -> decltype(auto)
-    { return get<N>(CB_FWD(obj)); }
+    { return detail::get_element<N>(CB_FWD(obj)); }
 };
 
 template <std::size_t ...Ns>
