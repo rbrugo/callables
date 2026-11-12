@@ -59,6 +59,55 @@ struct abs_fn
 constexpr inline abs_fn abs;
 
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................ROUND.....................................//
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct round_fn
+{
+    template <typename T>
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST
+    {
+        using std::round;
+        if constexpr (requires (T const & t) { { round(t) }; }) {
+            return round(t);
+        } else {
+            return t >= 0 ? t : -t;
+        }
+    }
+};
+
+constexpr inline round_fn round;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ...................................FLOOR.....................................//
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct floor_fn
+{
+    template <typename T>
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST
+    {
+        using std::floor;
+        return floor(t);
+    }
+};
+
+constexpr inline floor_fn floor;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+// ....................................CEIL.....................................//
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
+struct ceil_fn
+{
+    template <typename T>
+    constexpr CB_STATIC auto operator()(T && t) CB_CONST
+    {
+        using std::ceil;
+        return ceil(t);
+    }
+};
+
+constexpr inline ceil_fn ceil;
+
+// ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 // ...................................BETWEEN.................................. //
 // ....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo.... //
 struct between_fn
